@@ -72,7 +72,7 @@
 import React, { useState } from "react";
 
 const JobSheetStep = () => {
-  // Dummy job data (as a beginner, no store/state management)
+  
   const job = {
     estimate: {
       items: [
