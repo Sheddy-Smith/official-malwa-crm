@@ -41,22 +41,16 @@ const Settings = () => {
 
       if (error) throw error;
 
-      if (!data) {
-        setUserRole("Accountant");
-        setIsVerified(true);
-      } else {
-        setUserRole(data.role);
+      setUserRole(data?.role);
 
-        if (data.role === "Director") {
-          setShowPasswordModal(true);
-        } else {
-          setIsVerified(true);
-        }
+      if (data?.role === "Director") {
+        setShowPasswordModal(true);
+      } else {
+        setIsVerified(true);
       }
     } catch (error) {
       console.error("Error checking user role:", error);
-      setUserRole("Accountant");
-      setIsVerified(true);
+      navigate("/dashboard");
     } finally {
       setLoading(false);
     }
