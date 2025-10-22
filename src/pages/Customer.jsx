@@ -57,3 +57,77 @@ const Customer = () => {
     );
 };
 export default Customer;
+
+
+
+
+// // src/store/customerStore.js
+// import { create } from 'zustand';
+// import { persist } from 'zustand/middleware';
+// import { v4 as uuidv4 } from 'uuid';
+
+// const useCustomerStore = create(
+//   persist(
+//     (set, get) => ({ // Add 'get' here to read state inside actions
+//       customers: [],
+//       addCustomer: (customer) => set((state) => ({
+//         customers: [...state.customers, { id: uuidv4(), ledger: [], ...customer }], // Initialize ledger array
+//       })),
+//       updateCustomer: (updatedCustomer) => set((state) => ({
+//         customers: state.customers.map((c) => c.id === updatedCustomer.id ? updatedCustomer : c),
+//       })),
+//       deleteCustomer: (customerId) => set((state) => ({
+//         customers: state.customers.filter((c) => c.id !== customerId),
+//       })),
+
+//       // --- New Function for Ledger ---
+//       addLedgerEntry: (customerId, entry) => set((state) => {
+//         const customers = state.customers.map(customer => {
+//           if (customer.id === customerId) {
+//             // Add entry and sort ledger by date (newest first for running balance calculation later)
+//             const updatedLedger = [...customer.ledger, { ...entry, entryId: uuidv4(), date: entry.date || new Date().toISOString() }]
+//               .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort newest first initially
+
+//             // Recalculate running balances (start from oldest)
+//             let currentBalance = 0;
+//             const ledgerWithBalance = updatedLedger.reverse().map(e => { // Reverse to calculate from oldest
+//               const debit = parseFloat(e.debit || 0);
+//               const credit = parseFloat(e.credit || 0);
+//               currentBalance += (debit - credit);
+//               return { ...e, balance: currentBalance };
+//             }).reverse(); // Reverse back to newest first for display
+
+//             return { ...customer, ledger: ledgerWithBalance };
+//           }
+//           return customer;
+//         });
+//         return { customers };
+//       }),
+//       // --- (Optional) Function to delete a ledger entry ---
+//       deleteLedgerEntry: (customerId, entryId) => set((state) => {
+//          const customers = state.customers.map(customer => {
+//            if (customer.id === customerId) {
+//               const updatedLedger = customer.ledger.filter(e => e.entryId !== entryId)
+//                  .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort
+
+//               // Recalculate balances
+//                let currentBalance = 0;
+//                const ledgerWithBalance = updatedLedger.reverse().map(e => {
+//                  const debit = parseFloat(e.debit || 0);
+//                  const credit = parseFloat(e.credit || 0);
+//                  currentBalance += (debit - credit);
+//                  return { ...e, balance: currentBalance };
+//                }).reverse();
+
+//                return { ...customer, ledger: ledgerWithBalance };
+//            }
+//            return customer;
+//          });
+//          return { customers };
+//       }),
+
+//     }),
+//     { name: 'customer-storage' }
+//   )
+// );
+// export default useCustomerStore;
