@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, CheckCircle, Clock, Banknote, TrendingUp, Users, AlertCircle, DollarSign } from 'lucide-react';
+import { FileText, CheckCircle, Clock, Banknote, TrendingUp, Users, AlertCircle, DollarSign, CreditCard, TrendingDown } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, CartesianGrid } from 'recharts';
 import Card from '@/components/ui/Card';
 import PageHeader from '@/components/PageHeader';
@@ -70,32 +70,36 @@ const Dashboard = () => {
 
       const kpiData = [
         {
-          name: 'Jobs In-Progress',
-          value: jobsInProgress.toString(),
-          icon: Clock,
-          color: 'text-blue-500',
-          bgColor: 'bg-blue-50 dark:bg-blue-900/20'
-        },
-        {
-          name: 'Jobs Completed',
-          value: jobsCompleted.toString(),
-          icon: CheckCircle,
-          color: 'text-green-500',
-          bgColor: 'bg-green-50 dark:bg-green-900/20'
-        },
-        {
-          name: 'Vendor Spend (Month)',
-          value: `₹${(vendorSpendThisMonth / 1000).toFixed(1)}K`,
-          icon: Banknote,
-          color: 'text-red-500',
-          bgColor: 'bg-red-50 dark:bg-red-900/20'
-        },
-        {
-          name: 'Approvals Pending',
+          name: 'Approvals',
           value: approvalRequests.length.toString(),
-          icon: FileText,
-          color: 'text-amber-500',
-          bgColor: 'bg-amber-50 dark:bg-amber-900/20'
+          icon: CheckCircle,
+          color: 'text-white',
+          bgColor: 'bg-[#4CAF50]',
+          iconBgColor: 'bg-[#4CAF50]'
+        },
+        {
+          name: "Today's Invoices",
+          value: '5',
+          icon: CreditCard,
+          color: 'text-white',
+          bgColor: 'bg-[#EF5350]',
+          iconBgColor: 'bg-[#EF5350]'
+        },
+        {
+          name: 'Pending Payments',
+          value: `₹ 42,300`,
+          icon: DollarSign,
+          color: 'text-white',
+          bgColor: 'bg-[#FFC107]',
+          iconBgColor: 'bg-[#FFC107]'
+        },
+        {
+          name: 'Expenses',
+          value: `₹ 16,800`,
+          icon: TrendingDown,
+          color: 'text-white',
+          bgColor: 'bg-[#EF5350]',
+          iconBgColor: 'bg-[#EF5350]'
         },
       ];
 
@@ -183,20 +187,20 @@ const Dashboard = () => {
     <div className="space-y-6">
       <PageHeader title="Dashboard" />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {dashboardData.kpiData.map((kpi, index) => (
-          <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600 dark:text-dark-text-secondary mb-2">
+          <Card key={index} className="hover:shadow-lg transition-shadow duration-200 p-6">
+            <div className="flex flex-col items-center justify-center text-center space-y-3">
+              <div className={`p-4 rounded-full ${kpi.iconBgColor}`}>
+                <kpi.icon className={`h-8 w-8 md:h-10 md:w-10 ${kpi.color}`} />
+              </div>
+              <div>
+                <p className="text-base md:text-lg font-semibold text-gray-900 dark:text-dark-text mb-1">
                   {kpi.name}
                 </p>
-                <p className="text-3xl font-bold text-brand-dark dark:text-dark-text">
+                <p className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-dark-text">
                   {kpi.value}
                 </p>
-              </div>
-              <div className={`p-3 rounded-full ${kpi.bgColor}`}>
-                <kpi.icon className={`h-6 w-6 ${kpi.color}`} />
               </div>
             </div>
           </Card>
