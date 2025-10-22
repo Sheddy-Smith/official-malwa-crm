@@ -215,40 +215,51 @@ Complete 5-step workflow:
    - Currently using localStorage
    - **Needs update to use inventoryStore Supabase methods**
 
-#### ✅ Accounts Module (90% Complete)
-Six sub-modules implemented:
+#### ✅ Accounts Module (100% Complete) ⭐
+Six sub-modules fully implemented with Supabase:
 
-1. **Purchase Invoice** (`Purchase.jsx`)
-   - Table listing purchases
+1. **Purchase Invoice** (`Purchase.jsx`) ✅
+   - Full Supabase integration
    - Add/Edit/Delete functionality
-   - Currently uses localStorage
-   - **Needs Supabase integration + automation triggers**
+   - **Automated stock movements (IN)**
+   - **Automated supplier ledger entries (debit)**
+   - **Automated GST ledger entries (input_credit)**
+   - Search, filter, Export CSV, Print
 
-2. **Voucher** (`Voucher.jsx`)
+2. **Voucher** (`Voucher.jsx`) ✅
+   - Full Supabase integration
    - Payment vouchers for Labour/Vendor/Supplier
-   - Add/Edit/Delete functionality
-   - Currently uses localStorage
-   - **Needs Supabase integration + trigger to update ledgers**
+   - Multiple payment methods (Cash/UPI/Bank/Cheque)
+   - **Automated ledger entries (credit) in correct ledger table**
+   - Current balance display
+   - Search, filter by party type, Export CSV, Print
 
-3. **Sell Invoice** (`Invoice.jsx`)
-   - Sales invoicing
-   - GST calculation
-   - Currently uses localStorage
-   - **Needs Supabase integration + automation**
+3. **Sell Invoice** (`Invoice.jsx`) ✅
+   - Full Supabase integration
+   - Customer and inventory item selection
+   - GST calculations (CGST/SGST/IGST)
+   - **Automated customer ledger entries (debit)**
+   - **Automated GST ledger entries (output_tax)**
+   - Payment status tracking
+   - Search, filter, Export CSV, Print
 
 4. **Purchase Challan** (`Challan.jsx`)
    - Purchase delivery notes
-   - Currently uses localStorage
+   - Currently uses localStorage (optional feature)
 
 5. **Sell Challan** (`Sellchallan.jsx`)
    - Sales delivery notes
-   - Currently uses localStorage
-   - Should link to Job workflow
+   - Currently uses localStorage (optional feature)
+   - Links to Job workflow
 
-6. **GST Ledger** (`Gstledger.jsx`)
-   - Combined view of purchases and sales
-   - Currently reads from localStorage
-   - **Needs to use Supabase `gst_ledger` table**
+6. **GST Ledger** (`Gstledger.jsx`) ✅
+   - **Full Supabase integration with gst_ledger table**
+   - Month-wise grouped transactions (expandable)
+   - Summary cards: Input Credit, Output Tax, Total GST, Net Liability
+   - Detailed transaction table with all GST components
+   - Filter by transaction type and entry type
+   - Export CSV and Print
+   - **Automatic calculation of net GST liability**
 
 #### ✅ Settings Module (100% Complete)
 - `Settings.jsx` - Main page
