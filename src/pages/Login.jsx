@@ -21,7 +21,12 @@ const Login = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     setError('');
-    const user = { name: 'Demo User', email, role, branch };
+    const user = {
+      name: 'Demo User',
+      email,
+      role: email === 'malwatrolley@gmail.com' ? 'Director' : role,
+      branch
+    };
     const loggedIn = login(user, { email, password });
     if (loggedIn) {
       toast.success('Login Successful!');

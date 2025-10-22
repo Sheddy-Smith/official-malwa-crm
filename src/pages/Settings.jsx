@@ -8,10 +8,10 @@ import useAuthStore from "@/store/authStore";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 
-const tabs = [
-  { id: "users", label: "User Management", component: UserManagementTab },
+const allTabs = [
+  { id: "users", label: "User Management", component: UserManagementTab, directorOnly: true },
   { id: "profile", label: "My Profile", component: MyProfileTab },
-  { id: "branches", label: "Branches", component: BranchesTab }
+  { id: "branches", label: "Branches", component: BranchesTab, directorOnly: true }
 ];
 
 const Settings = () => {
@@ -33,27 +33,33 @@ const Settings = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
+      let role = user.role || "Accountant";
 
-      if (error) throw error;
+      if (user.id) {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
 
-      const role = data?.role || "Accountant";
-      setUserRole(role);
-
-      if (role !== "Director") {
-        navigate("/dashboard");
-        return;
+        if (!error && data) {
+          role = data.role;
+        }
       }
 
-      setShowPasswordModal(true);
+      setUserRole(role);
+
+      if (role === "Director") {
+        setShowPasswordModal(true);
+      } else {
+        setIsVerified(true);
+      }
+
+      setLoading(false);
     } catch (error) {
       console.error("Error checking user role:", error);
-      navigate("/dashboard");
-    } finally {
+      setUserRole(user.role || "Accountant");
+      setIsVerified(true);
       setLoading(false);
     }
   };
@@ -75,7 +81,7 @@ const Settings = () => {
     );
   }
 
-  if (!isVerified) {
+  if (userRole === "Director" && !isVerified) {
     return (
       <AdminPasswordModal
         isOpen={showPasswordModal}
@@ -85,7 +91,11 @@ const Settings = () => {
     );
   }
 
-  return <TabbedPage tabs={tabs} title="Settings" />;
+  const availableTabs = allTabs.filter(tab =>
+    !tab.directorOnly || userRole === "Director"
+  );
+
+  return <TabbedPage tabs={availableTabs} title="Settings" />;
 };
 
 export default Settings;
