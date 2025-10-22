@@ -2,19 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import {
-  ClipboardList,
-  FileSpreadsheet,
-  Wrench,
-  PackageCheck,
-  ReceiptText,
-  ArrowRight,
-  ArrowLeft,
-  PlusCircle,
-  Search,
-  Edit,
-  Trash2,
-} from 'lucide-react';
+import { ClipboardList, FileSpreadsheet, Wrench, PackageCheck, ReceiptText, ArrowRight, ArrowLeft, PlusCircle, Search, CreditCard as Edit, Trash2 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
