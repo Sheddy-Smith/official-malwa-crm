@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import TabbedPage from '@/components/TabbedPage';
 import SupplierDetailsTab from './supplier/SupplierDetailsTab';
+import SupplierLedgerTab from './supplier/SupplierLedgerTab';
 import useSupplierStore from '@/store/supplierStore';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
@@ -161,16 +162,9 @@ const SupplierForm = ({ supplier, onSave, onCancel }) => {
   );
 };
 
-const Placeholder = ({ title }) => (
-  <div className="p-8 text-center text-gray-500 dark:text-dark-text-secondary">
-    <h3 className="text-lg font-bold mb-2">{title}</h3>
-    <p>Content for {title} will be implemented here.</p>
-  </div>
-);
-
 const tabs = [
   { id: 'details', label: 'Supplier Details', component: SupplierDetailsTab },
-  { id: 'ledger', label: 'Supplier Ledger', component: () => <Placeholder title="Supplier Ledger" /> },
+  { id: 'ledger', label: 'Supplier Ledger', component: SupplierLedgerTab },
 ];
 
 const Supplier = () => {
