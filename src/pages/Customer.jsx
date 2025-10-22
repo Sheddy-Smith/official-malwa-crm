@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import TabbedPage from '@/components/TabbedPage';
-import LeadsTab from './customer/LeadsTab';
-import ContactsTab from './customer/ContactsTab';
-import LedgerTab from './customer/LedgerTab';
+import CustomerDetailsTab from './customer/CustomerDetailsTab';
+import CustomerLedgerTab from './customer/CustomerLedgerTab';
+import SalesHistoryTab from './customer/SalesHistoryTab';
 import Button from '@/components/ui/Button';
 import { PlusCircle } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
@@ -29,9 +29,9 @@ const CustomerForm = ({ onSave, onCancel }) => {
 };
 
 const tabs = [
-  { id: 'contacts', label: 'Contacts', component: ContactsTab },
-  { id: 'leads', label: 'Leads', component: LeadsTab },
-  { id: 'ledger', label: 'Customer Ledger', component: LedgerTab },
+  { id: 'details', label: 'Customer Details', component: CustomerDetailsTab },
+  { id: 'ledger', label: 'Customer Ledger', component: CustomerLedgerTab },
+  { id: 'sales', label: 'Sales History', component: SalesHistoryTab },
 ];
 
 const Customer = () => {
