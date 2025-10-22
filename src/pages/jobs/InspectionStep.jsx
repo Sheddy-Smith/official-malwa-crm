@@ -3083,7 +3083,7 @@
 import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { PlusCircle, Trash2, Edit, Save, X } from "lucide-react";
+import { PlusCircle, Trash2, CreditCard as Edit, Save, X } from "lucide-react";
 
 const InspectionStep = () => {
   // Vehicle details
