@@ -39,7 +39,41 @@ const MyProfileTab = () => {
         .maybeSingle();
 
       if (error) throw error;
-      setProfile(data);
+
+      if (!data) {
+        const { data: authUser } = await supabase.auth.getUser();
+
+        const newProfile = {
+          id: user.id,
+          name: authUser?.user?.user_metadata?.name || authUser?.user?.email?.split('@')[0] || "User",
+          email: authUser?.user?.email || user.email || "",
+          role: "Accountant",
+          status: "Active",
+          permissions: {
+            dashboard: "full",
+            jobs: "full",
+            customer: "full",
+            vendors: "full",
+            labour: "full",
+            supplier: "full",
+            inventory: "full",
+            accounts: "full",
+            summary: "view",
+            settings: "none"
+          }
+        };
+
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert([newProfile]);
+
+        if (insertError) throw insertError;
+
+        setProfile({ ...newProfile, branch: null });
+        toast.success("Profile created successfully");
+      } else {
+        setProfile(data);
+      }
     } catch (error) {
       console.error("Error fetching profile:", error);
       toast.error("Failed to load profile");
@@ -65,12 +99,14 @@ const MyProfileTab = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({
+        .upsert({
+          id: user.id,
           name: editForm.name,
           email: editForm.email,
           updated_at: new Date().toISOString()
-        })
-        .eq("id", user.id);
+        }, {
+          onConflict: 'id'
+        });
 
       if (error) throw error;
 
@@ -127,18 +163,10 @@ const MyProfileTab = () => {
     }
   };
 
-  if (loading) {
+  if (loading || !profile) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-        Profile not found
       </div>
     );
   }
