@@ -68,6 +68,22 @@ const Dashboard = () => {
 
       const approvalRequests = Object.values(jobs).filter(job => job?.estimate?.approvalNeeded || false);
 
+      const todayInvoices = invoices.filter(inv => {
+        const invDate = new Date(inv.created_at);
+        return invDate.toDateString() === today.toDateString();
+      });
+
+      const pendingPayments = invoices
+        .filter(inv => inv.payment_status === 'pending' || inv.payment_status === 'partial')
+        .reduce((sum, inv) => sum + parseFloat(inv.total_amount || 0), 0);
+
+      const totalExpenses = vendorSpendThisMonth + labourLedger
+        .filter(entry => {
+          const entryDate = new Date(entry.entry_date);
+          return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+        })
+        .reduce((sum, entry) => sum + parseFloat(entry.debit || 0), 0);
+
       const kpiData = [
         {
           name: 'Approvals',
@@ -79,7 +95,7 @@ const Dashboard = () => {
         },
         {
           name: "Today's Invoices",
-          value: '5',
+          value: todayInvoices.length.toString(),
           icon: CreditCard,
           color: 'text-white',
           bgColor: 'bg-[#EF5350]',
@@ -87,7 +103,7 @@ const Dashboard = () => {
         },
         {
           name: 'Pending Payments',
-          value: `₹ 42,300`,
+          value: `₹ ${(pendingPayments / 1000).toFixed(1)}K`,
           icon: DollarSign,
           color: 'text-white',
           bgColor: 'bg-[#FFC107]',
@@ -95,7 +111,7 @@ const Dashboard = () => {
         },
         {
           name: 'Expenses',
-          value: `₹ 16,800`,
+          value: `₹ ${(totalExpenses / 1000).toFixed(1)}K`,
           icon: TrendingDown,
           color: 'text-white',
           bgColor: 'bg-[#EF5350]',
