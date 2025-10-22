@@ -94,3 +94,7 @@ const VendorDetailsTab = () => {
 };
 
 export default VendorDetailsTab;
+
+
+
+

@@ -1676,6 +1676,1409 @@
 
 // export default InspectionStep;
 
+// working perfect code and final
+// import { useState, useEffect } from "react";
+// import Card from "@/components/ui/Card";
+// import Button from "@/components/ui/Button";
+// import { PlusCircle, Trash2, Edit, Save, X } from "lucide-react";
+
+// const InspectionStep = () => {
+//   // 👉 Vehicle ka basic details (inputs ke liye ek object use kar rahe hain)
+//   const [details, setDetails] = useState({
+//     vehicleNo: "",
+//     ownerName: "",
+//     inspectionDate: "",
+//     branch: "",
+//   });
+
+//   // 👉 Inspection Items (localStorage se load hoga agar pehle se save hai)
+//   const [items, setItems] = useState(() => {
+//     const saved = localStorage.getItem("inspectionItems");
+//     return saved ? JSON.parse(saved) : [];
+//   });
+
+//   // 👉 Edit karne ke liye row index save karte hain
+//   const [editingIndex, setEditingIndex] = useState(null);
+
+//   // 👉 Naya item add karne ke liye temporary state
+//   const [newItem, setNewItem] = useState(null);
+
+//   // 👉 Multiplier table (alag-alag item ka cost multiply karne ke liye)
+//   const multipliers = {
+//     Parts: 1.5,
+//     Labour: 2,
+//     Hardware: 2,
+//     Steel: 1.5,
+//   };
+
+//   // 👉 Jab bhi items update hote hain, unhe localStorage me save kar do
+//   useEffect(() => {
+//     localStorage.setItem("inspectionItems", JSON.stringify(items));
+//   }, [items]);
+
+//   // 👉 Vehicle Details ke inputs ke liye change handler
+//   const handleDetailChange = (e) => {
+//     setDetails({ ...details, [e.target.name]: e.target.value });
+//   };
+
+//   // 👉 Save vehicle details (abhi ke liye console + alert hi rakha hai)
+//   const saveDetails = () => {
+//     console.log("Vehicle details:", details);
+//     alert("Vehicle details saved!");
+//   };
+
+//   // 👉 Naya row add karna
+//   const addRow = () => {
+//     setNewItem({ item: "", category: "", condition: "OK", cost: "0" });
+//   };
+
+//   // 👉 Naya row save karna
+//   const saveNewRow = () => {
+//     setItems([...items, newItem]);
+//     setNewItem(null);
+//   };
+
+//   // 👉 Row ko edit mode me lana
+//   const editRow = (index) => {
+//     setEditingIndex(index);
+//   };
+
+//   // 👉 Edited row save karna
+//   const saveEditRow = () => {
+//     setEditingIndex(null);
+//   };
+
+//   // 👉 Row delete karna
+//   const deleteRow = (index) => {
+//     const updated = items.filter((_, i) => i !== index);
+//     setItems(updated);
+//   };
+
+//   // 👉 Cost × multiplier se total calculate karna
+//   const calculateTotal = (item) => {
+//     const cost = parseFloat(item.cost) || 0;
+//     const multiplier = multipliers[item.item] || 1;
+//     return (cost * multiplier).toFixed(2);
+//   };
+
+//   return (
+//     <div className="space-y-4">
+//       <h3 className="text-xl font-bold">Vehicle Inspection</h3>
+
+//       {/* 🚗 Card 1 - Vehicle Details */}
+//       <Card>
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+//           {/* Vehicle No */}
+//           <div>
+//             <label>Vehicle No:</label>
+//             <input
+//               type="text"
+//               name="vehicleNo"
+//               value={details.vehicleNo}
+//               onChange={handleDetailChange}
+//               className="w-full mt-1 p-2 border rounded-lg"
+//             />
+//           </div>
+
+//           {/* Owner Name */}
+//           <div>
+//             <label>Owner Name:</label>
+//             <input
+//               type="text"
+//               name="ownerName"
+//               value={details.ownerName}
+//               onChange={handleDetailChange}
+//               className="w-full mt-1 p-2 border rounded-lg"
+//             />
+//           </div>
+
+//           {/* Inspection Date */}
+//           <div>
+//             <label>Inspection Date:</label>
+//             <input
+//               type="date"
+//               name="inspectionDate"
+//               value={details.inspectionDate}
+//               onChange={handleDetailChange}
+//               className="w-full mt-1 p-2 border rounded-lg"
+//             />
+//           </div>
+
+//           {/* Branch */}
+//           <div>
+//             <label>Branch:</label>
+//             <input
+//               type="text"
+//               name="branch"
+//               value={details.branch}
+//               onChange={handleDetailChange}
+//               className="w-full mt-1 p-2 border rounded-lg"
+//             />
+//           </div>
+//         </div>
+
+//         {/* Save Vehicle Details Button */}
+//         <div className="flex justify-end mt-4">
+//           <Button onClick={saveDetails}>
+//             <Save className="h-4 w-4 mr-2" /> Save Details
+//           </Button>
+//         </div>
+//       </Card>
+
+//       {/* 📝 Card 2 - Inspection Items */}
+//       <Card title="Inspection Items">
+//         <div className="overflow-x-auto">
+//           <table className="w-full text-sm">
+//             <thead className="bg-gray-50 text-left">
+//               <tr>
+//                 <th className="p-2">Item</th>
+//                 <th className="p-2">Category</th>
+//                 <th className="p-2">Condition</th>
+//                 <th className="p-2">Cost (₹)</th>
+//                 <th className="p-2">Total (₹)</th>
+//                 <th className="p-2 text-right">Actions</th>
+//               </tr>
+//             </thead>
+
+//             <tbody>
+//               {/* 👉 Existing Rows */}
+//               {items.map((item, index) =>
+//                 editingIndex === index ? (
+//                   // Editable row
+//                   <tr key={index} className="bg-blue-50">
+//                     <td className="p-2">
+//                       <input
+//                         type="text"
+//                         value={item.item}
+//                         onChange={(e) => {
+//                           const copy = [...items];
+//                           copy[index].item = e.target.value;
+//                           setItems(copy);
+//                         }}
+//                         list="items-list"
+//                         placeholder="Type or select item"
+//                         className="w-full p-1 border rounded-lg"
+//                       />
+//                       <datalist id="items-list">
+//                         <option value="Parts" />
+//                         <option value="Labour" />
+//                         <option value="Hardware" />
+//                         <option value="Steel" />
+//                       </datalist>
+//                     </td>
+
+//                     <td className="p-2">
+//                       <input
+//                         type="text"
+//                         value={item.category}
+//                         onChange={(e) => {
+//                           const copy = [...items];
+//                           copy[index].category = e.target.value;
+//                           setItems(copy);
+//                         }}
+//                         className="w-full p-1 border rounded-lg"
+//                       />
+//                     </td>
+
+//                     <td className="p-2">
+//                       <select
+//                         value={item.condition}
+//                         onChange={(e) => {
+//                           const copy = [...items];
+//                           copy[index].condition = e.target.value;
+//                           setItems(copy);
+//                         }}
+//                         className="w-full p-1 border rounded-lg"
+//                       >
+//                         <option>OK</option>
+//                         <option>Repair Needed</option>
+//                         <option>Replace</option>
+//                       </select>
+//                     </td>
+
+//                     <td className="p-2">
+//                       <input
+//                         type="number"
+//                         value={item.cost}
+//                         onChange={(e) => {
+//                           const copy = [...items];
+//                           copy[index].cost = e.target.value;
+//                           setItems(copy);
+//                         }}
+//                         className="w-24 p-1 border rounded-lg"
+//                       />
+//                     </td>
+
+//                     <td className="p-2">{calculateTotal(item)}</td>
+
+//                     <td className="p-2 text-right space-x-1">
+//                       <Button variant="ghost" onClick={() => saveEditRow(index)}>
+//                         <Save className="h-4 w-4 text-green-600" />
+//                       </Button>
+//                       <Button variant="ghost" onClick={() => setEditingIndex(null)}>
+//                         <X className="h-4 w-4 text-gray-600" />
+//                       </Button>
+//                     </td>
+//                   </tr>
+//                 ) : (
+//                   // Normal row
+//                   <tr key={index}>
+//                     <td className="p-2">{item.item}</td>
+//                     <td className="p-2">{item.category}</td>
+//                     <td className="p-2">{item.condition}</td>
+//                     <td className="p-2">{item.cost}</td>
+//                     <td className="p-2">{calculateTotal(item)}</td>
+//                     <td className="p-2 text-right space-x-1">
+//                       <Button variant="ghost" onClick={() => editRow(index)}>
+//                         <Edit className="h-4 w-4 text-blue-600" />
+//                       </Button>
+//                       <Button variant="ghost" onClick={() => deleteRow(index)}>
+//                         <Trash2 className="h-4 w-4 text-red-500" />
+//                       </Button>
+//                     </td>
+//                   </tr>
+//                 )
+//               )}
+
+//               {/* 👉 New Row */}
+//               {newItem && (
+//                 <tr className="bg-blue-50">
+//                   <td className="p-2">
+//                     <input
+//                       type="text"
+//                       value={newItem.item}
+//                       onChange={(e) => setNewItem({ ...newItem, item: e.target.value })}
+//                       list="items-list"
+//                       placeholder="Type or select item"
+//                       className="w-full p-1 border rounded-lg"
+//                     />
+//                     <datalist id="items-list">
+//                       <option value="Parts" />
+//                       <option value="Labour" />
+//                       <option value="Hardware" />
+//                       <option value="Steel" />
+//                     </datalist>
+//                   </td>
+
+//                   <td className="p-2">
+//                     <input
+//                       type="text"
+//                       value={newItem.category}
+//                       onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+//                       className="w-full p-1 border rounded-lg"
+//                     />
+//                   </td>
+
+//                   <td className="p-2">
+//                     <select
+//                       value={newItem.condition}
+//                       onChange={(e) => setNewItem({ ...newItem, condition: e.target.value })}
+//                       className="w-full p-1 border rounded-lg"
+//                     >
+//                       <option>OK</option>
+//                       <option>Repair Needed</option>
+//                       <option>Replace</option>
+//                       <option>Damage</option>
+//                     </select>
+//                   </td>
+
+//                   <td className="p-2">
+//                     <input
+//                       type="number"
+//                       value={newItem.cost}
+//                       onChange={(e) => setNewItem({ ...newItem, cost: e.target.value })}
+//                       className="w-24 p-1 border rounded-lg"
+//                     />
+//                   </td>
+
+//                   <td className="p-2">{calculateTotal(newItem)}</td>
+
+//                   <td className="p-2 text-right space-x-1">
+//                     <Button variant="ghost" onClick={saveNewRow}>
+//                       <Save className="h-4 w-4 text-green-600" />
+//                     </Button>
+//                     <Button variant="ghost" onClick={() => setNewItem(null)}>
+//                       <X className="h-4 w-4 text-gray-600" />
+//                     </Button>
+//                   </td>
+//                 </tr>
+//               )}
+//             </tbody>
+//           </table>
+
+//           {/* 👉 Empty state */}
+//           {items.length === 0 && !newItem && (
+//             <div className="text-center p-4 text-gray-500">No inspection items.</div>
+//           )}
+//         </div>
+
+//         {/* Add Item Button */}
+//         <div className="mt-4">
+//           <Button variant="secondary" onClick={addRow} disabled={!!newItem}>
+//             <PlusCircle className="h-4 w-4 mr-2" /> Add Item
+//           </Button>
+//         </div>
+//       </Card>
+//     </div>
+//   );
+// };
+
+// export default InspectionStep;
+
+
+
+
+
+// 1 dummy code
+// import { useState, useEffect } from "react";
+// import Card from "@/components/ui/Card";
+// import Button from "@/components/ui/Button";
+// import { PlusCircle, Trash2, Edit, Save, X } from "lucide-react";
+
+// const InspectionStep = () => {
+//   const [details, setDetails] = useState({
+//     vehicleNo: "",
+//     ownerName: "",
+//     inspectionDate: "",
+//     branch: "",
+//   });
+
+//   const [items, setItems] = useState(() => {
+//     try {
+//       const saved = localStorage.getItem("inspectionItems");
+//       return saved ? JSON.parse(saved) : [];
+//     } catch {
+//       return [];
+//     }
+//   });
+
+//   const [categories, setCategories] = useState(() => {
+//     try {
+//       const saved = localStorage.getItem("categories");
+//       return saved ? JSON.parse(saved) : [];
+//     } catch {
+//       return [];
+//     }
+//   });
+
+//   // listen for updates (same-tab custom event + cross-tab storage)
+//   useEffect(() => {
+//     const loadCats = () => {
+//       try {
+//         const saved = localStorage.getItem("categories");
+//         setCategories(saved ? JSON.parse(saved) : []);
+//       } catch {
+//         setCategories([]);
+//       }
+//     };
+
+//     loadCats();
+//     const onCats = () => loadCats();
+//     const onStorage = (e) => { if (e.key === "categories") loadCats(); };
+
+//     window.addEventListener("categoriesUpdated", onCats);
+//     window.addEventListener("storage", onStorage);
+//     return () => {
+//       window.removeEventListener("categoriesUpdated", onCats);
+//       window.removeEventListener("storage", onStorage);
+//     };
+//   }, []);
+
+//   const [editingIndex, setEditingIndex] = useState(null);
+//   const [newItem, setNewItem] = useState(null);
+
+//   const multipliers = {
+//     Parts: 1.5,
+//     Labour: 2,
+//     Hardware: 2,
+//     Steel: 1.5,
+//   };
+
+//   useEffect(() => {
+//     try {
+//       localStorage.setItem("inspectionItems", JSON.stringify(items));
+//     } catch {}
+//   }, [items]);
+
+//   const handleDetailChange = (e) => setDetails({ ...details, [e.target.name]: e.target.value });
+//   const saveDetails = () => { console.log("Vehicle details:", details); alert("Vehicle details saved!"); };
+
+//   const addRow = () => setNewItem({ item: "", category: "", condition: "OK", cost: "0" });
+
+//   const saveNewRow = () => {
+//     if (!newItem || !newItem.item?.toString().trim()) { alert("Please enter item name."); return; }
+//     setItems([...items, newItem]);
+//     setNewItem(null);
+//   };
+
+//   const editRow = (index) => setEditingIndex(index);
+//   const saveEditRow = (index) => {
+//     const it = items[index];
+//     if (!it || !it.item?.toString().trim()) { alert("Item cannot be empty."); return; }
+//     setEditingIndex(null);
+//   };
+
+//   const deleteRow = (index) => setItems(items.filter((_, i) => i !== index));
+
+//   const calculateTotal = (item) => {
+//     const cost = parseFloat(item?.cost) || 0;
+//     const multiplier = multipliers[item?.item] || 1;
+//     return (cost * multiplier).toFixed(2);
+//   };
+
+//   return (
+//     <div className="space-y-4">
+//       <h3 className="text-xl font-bold">Vehicle Inspection</h3>
+
+//       <Card>
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+//           <div><label>Vehicle No:</label><input type="text" name="vehicleNo" value={details.vehicleNo} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" /></div>
+//           <div><label>Owner Name:</label><input type="text" name="ownerName" value={details.ownerName} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" /></div>
+//           <div><label>Inspection Date:</label><input type="date" name="inspectionDate" value={details.inspectionDate} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" /></div>
+//           <div><label>Branch:</label><input type="text" name="branch" value={details.branch} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" /></div>
+//         </div>
+
+//         <div className="flex justify-end mt-4"><Button onClick={saveDetails}><Save className="h-4 w-4 mr-2" /> Save Details</Button></div>
+//       </Card>
+
+//       <Card title="Inspection Items">
+//         <div className="overflow-x-auto">
+//           <table className="w-full text-sm">
+//             <thead className="bg-gray-50 text-left"><tr><th className="p-2">Item</th><th className="p-2">Category</th><th className="p-2">Condition</th><th className="p-2">Cost (₹)</th><th className="p-2">Total (₹)</th><th className="p-2 text-right">Actions</th></tr></thead>
+//             <tbody>
+//               {items.map((it, index) => editingIndex === index ? (
+//                 <tr key={index} className="bg-blue-50">
+//                   <td className="p-2">
+//                     <input type="text" value={it.item} onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], item: e.target.value }; setItems(copy); }} list="items-list" placeholder="Type or select item" className="w-full p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">
+//                     <input type="text" value={it.category} onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], category: e.target.value }; setItems(copy); }} className="w-full p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">
+//                     <select value={it.condition} onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], condition: e.target.value }; setItems(copy); }} className="w-full p-1 border rounded-lg">
+//                       <option>OK</option><option>Repair Needed</option><option>Replace</option>
+//                     </select>
+//                   </td>
+//                   <td className="p-2">
+//                     <input type="number" value={it.cost} onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], cost: e.target.value }; setItems(copy); }} className="w-24 p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">{calculateTotal(it)}</td>
+//                   <td className="p-2 text-right space-x-1">
+//                     <Button variant="ghost" onClick={() => saveEditRow(index)}><Save className="h-4 w-4 text-green-600" /></Button>
+//                     <Button variant="ghost" onClick={() => setEditingIndex(null)}><X className="h-4 w-4 text-gray-600" /></Button>
+//                   </td>
+//                 </tr>
+//               ) : (
+//                 <tr key={index}>
+//                   <td className="p-2">{it.item}</td>
+//                   <td className="p-2">{it.category}</td>
+//                   <td className="p-2">{it.condition}</td>
+//                   <td className="p-2">{it.cost}</td>
+//                   <td className="p-2">{calculateTotal(it)}</td>
+//                   <td className="p-2 text-right space-x-1">
+//                     <Button variant="ghost" onClick={() => editRow(index)}><Edit className="h-4 w-4 text-blue-600" /></Button>
+//                     <Button variant="ghost" onClick={() => deleteRow(index)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+//                   </td>
+//                 </tr>
+//               ))}
+
+//               {newItem && (
+//                 <tr className="bg-blue-50">
+//                   <td className="p-2">
+//                     <input type="text" value={newItem.item} onChange={(e) => setNewItem({ ...newItem, item: e.target.value })} list="items-list" placeholder="Type or select item" className="w-full p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">
+//                     <input type="text" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} list="categories-list" className="w-full p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">
+//                     <select value={newItem.condition} onChange={(e) => setNewItem({ ...newItem, condition: e.target.value })} className="w-full p-1 border rounded-lg">
+//                       <option>OK</option><option>Repair Needed</option><option>Replace</option><option>Damage</option>
+//                     </select>
+//                   </td>
+//                   <td className="p-2">
+//                     <input type="number" value={newItem.cost} onChange={(e) => setNewItem({ ...newItem, cost: e.target.value })} className="w-24 p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">{calculateTotal(newItem)}</td>
+//                   <td className="p-2 text-right space-x-1">
+//                     <Button variant="ghost" onClick={saveNewRow}><Save className="h-4 w-4 text-green-600" /></Button>
+//                     <Button variant="ghost" onClick={() => setNewItem(null)}><X className="h-4 w-4 text-gray-600" /></Button>
+//                   </td>
+//                 </tr>
+//               )}
+//             </tbody>
+//           </table>
+
+//           {items.length === 0 && !newItem && <div className="text-center p-4 text-gray-500">No inspection items.</div>}
+//         </div>
+
+//         <div className="mt-4">
+//           <Button variant="secondary" onClick={addRow} disabled={!!newItem}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+//         </div>
+//       </Card>
+
+//       <datalist id="items-list">
+//         {categories.map((cat, i) => <option key={i} value={cat.name} />)}
+//       </datalist>
+//     </div>
+//   );
+// };
+
+// export default InspectionStep;
+
+
+// code 1
+// import { useState, useEffect } from "react";
+// import Card from "@/components/ui/Card";
+// import Button from "@/components/ui/Button";
+// import { PlusCircle, Trash2, Edit, Save, X } from "lucide-react";
+
+// const InspectionStep = () => {
+//   // Vehicle details
+//   const [details, setDetails] = useState({
+//     vehicleNo: "",
+//     ownerName: "",
+//     inspectionDate: "",
+//     branch: "",
+//   });
+
+//   // Inspection items
+//   const [items, setItems] = useState(() => {
+//     try {
+//       const saved = localStorage.getItem("inspectionItems");
+//       return saved ? JSON.parse(saved) : [];
+//     } catch {
+//       return [];
+//     }
+//   });
+
+//   // Categories (loaded from localStorage "categories"); used to populate Item datalist
+//   const [categories, setCategories] = useState(() => {
+//     try {
+//       const saved = localStorage.getItem("categories");
+//       return saved ? JSON.parse(saved) : [];
+//     } catch {
+//       return [];
+//     }
+//   });
+
+//   // Keep categories in sync (same-tab custom event + cross-tab storage event)
+//   useEffect(() => {
+//     const loadCats = () => {
+//       try {
+//         const saved = localStorage.getItem("categories");
+//         setCategories(saved ? JSON.parse(saved) : []);
+//       } catch {
+//         setCategories([]);
+//       }
+//     };
+
+//     loadCats();
+//     const onCats = () => loadCats();
+//     const onStorage = (e) => { if (e.key === "categories") loadCats(); };
+
+//     window.addEventListener("categoriesUpdated", onCats);
+//     window.addEventListener("storage", onStorage);
+//     return () => {
+//       window.removeEventListener("categoriesUpdated", onCats);
+//       window.removeEventListener("storage", onStorage);
+//     };
+//   }, []);
+
+//   // editing/new row state
+//   const [editingIndex, setEditingIndex] = useState(null);
+//   const [newItem, setNewItem] = useState(null);
+
+//   // multipliers mapping (apply based on category primarily)
+//   const multipliers = {
+//     Parts: 1.5,
+//     Labour: 2,
+//     Hardware: 2,
+//     Steel: 1.5,
+//   };
+
+//   // persist items
+//   useEffect(() => {
+//     try {
+//       localStorage.setItem("inspectionItems", JSON.stringify(items));
+//     } catch {}
+//   }, [items]);
+
+//   const handleDetailChange = (e) => setDetails({ ...details, [e.target.name]: e.target.value });
+//   const saveDetails = () => { console.log("Vehicle details:", details); alert("Vehicle details saved!"); };
+
+//   const addRow = () => setNewItem({ item: "", category: "", condition: "OK", cost: "0" });
+
+//   const saveNewRow = () => {
+//     if (!newItem || !newItem.item?.toString().trim()) { alert("Please enter item name."); return; }
+//     // normalize cost to string/number as you prefer; keeping as string to preserve existing UI behavior
+//     setItems([...items, newItem]);
+//     setNewItem(null);
+//   };
+
+//   const editRow = (index) => setEditingIndex(index);
+//   const saveEditRow = (index) => {
+//     const it = items[index];
+//     if (!it || !it.item?.toString().trim()) { alert("Item cannot be empty."); return; }
+//     setEditingIndex(null);
+//   };
+
+//   const deleteRow = (index) => setItems(items.filter((_, i) => i !== index));
+
+//   // Use category first for multiplier lookup; fallback to item text (backwards-compat)
+//   const calculateTotal = (item) => {
+//     const cost = parseFloat(item?.cost) || 0;
+//     const multiplier = multipliers[item?.category] || multipliers[item?.item] || 1;
+//     return (cost * multiplier).toFixed(2);
+//   };
+
+//   return (
+//     <div className="space-y-4">
+//       <h3 className="text-xl font-bold">Vehicle Inspection</h3>
+
+//       {/* Vehicle Details */}
+//       <Card>
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+//           <div>
+//             <label>Vehicle No:</label>
+//             <input type="text" name="vehicleNo" value={details.vehicleNo} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+
+//           <div>
+//             <label>Owner Name:</label>
+//             <input type="text" name="ownerName" value={details.ownerName} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+
+//           <div>
+//             <label>Inspection Date:</label>
+//             <input type="date" name="inspectionDate" value={details.inspectionDate} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+
+//           <div>
+//             <label>Branch:</label>
+//             <input type="text" name="branch" value={details.branch} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+//         </div>
+
+//         <div className="flex justify-end mt-4">
+//           <Button onClick={saveDetails}><Save className="h-4 w-4 mr-2" /> Save Details</Button>
+//         </div>
+//       </Card>
+
+//       {/* Inspection Items */}
+//       <Card title="Inspection Items">
+//         <div className="overflow-x-auto">
+//           <table className="w-full text-sm">
+//             <thead className="bg-gray-50 text-left">
+//               <tr>
+//                 <th className="p-2">Item</th>
+//                 <th className="p-2">Category</th>
+//                 <th className="p-2">Condition</th>
+//                 <th className="p-2">Cost (₹)</th>
+//                 <th className="p-2">Total (₹)</th>
+//                 <th className="p-2 text-right">Actions</th>
+//               </tr>
+//             </thead>
+
+//             <tbody>
+//               {items.map((it, index) =>
+//                 editingIndex === index ? (
+//                   <tr key={index} className="bg-blue-50">
+//                     <td className="p-2">
+//                       <input
+//                         type="text"
+//                         value={it.item}
+//                         onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], item: e.target.value }; setItems(copy); }}
+//                         list="items-list" // items-list populated from categories (as requested)
+//                         placeholder="Type or select item"
+//                         className="w-full p-1 border rounded-lg"
+//                       />
+//                     </td>
+
+//                     <td className="p-2">
+//                       <input
+//                         type="text"
+//                         value={it.category}
+//                         onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], category: e.target.value }; setItems(copy); }}
+//                         className="w-full p-1 border rounded-lg"
+//                       />
+//                     </td>
+
+//                     <td className="p-2">
+//                       <select value={it.condition} onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], condition: e.target.value }; setItems(copy); }} className="w-full p-1 border rounded-lg">
+//                         <option>OK</option>
+//                         <option>Repair Needed</option>
+//                         <option>Replace</option>
+//                       </select>
+//                     </td>
+
+//                     <td className="p-2">
+//                       <input type="number" value={it.cost} onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], cost: e.target.value }; setItems(copy); }} className="w-24 p-1 border rounded-lg" />
+//                     </td>
+
+//                     <td className="p-2">{calculateTotal(it)}</td>
+
+//                     <td className="p-2 text-right space-x-1">
+//                       <Button variant="ghost" onClick={() => saveEditRow(index)}><Save className="h-4 w-4 text-green-600" /></Button>
+//                       <Button variant="ghost" onClick={() => setEditingIndex(null)}><X className="h-4 w-4 text-gray-600" /></Button>
+//                     </td>
+//                   </tr>
+//                 ) : (
+//                   <tr key={index}>
+//                     <td className="p-2">{it.item}</td>
+//                     <td className="p-2">{it.category}</td>
+//                     <td className="p-2">{it.condition}</td>
+//                     <td className="p-2">{it.cost}</td>
+//                     <td className="p-2">{calculateTotal(it)}</td>
+//                     <td className="p-2 text-right space-x-1">
+//                       <Button variant="ghost" onClick={() => editRow(index)}><Edit className="h-4 w-4 text-blue-600" /></Button>
+//                       <Button variant="ghost" onClick={() => deleteRow(index)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+//                     </td>
+//                   </tr>
+//                 )
+//               )}
+
+//               {newItem && (
+//                 <tr className="bg-blue-50">
+//                   <td className="p-2">
+//                     <input type="text" value={newItem.item} onChange={(e) => setNewItem({ ...newItem, item: e.target.value })} list="items-list" placeholder="Type or select item" className="w-full p-1 border rounded-lg" />
+//                   </td>
+
+//                   <td className="p-2">
+//                     <input type="text" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} className="w-full p-1 border rounded-lg" />
+//                   </td>
+
+//                   <td className="p-2">
+//                     <select value={newItem.condition} onChange={(e) => setNewItem({ ...newItem, condition: e.target.value })} className="w-full p-1 border rounded-lg">
+//                       <option>OK</option>
+//                       <option>Repair Needed</option>
+//                       <option>Replace</option>
+//                       <option>Damage</option>
+//                     </select>
+//                   </td>
+
+//                   <td className="p-2">
+//                     <input type="number" value={newItem.cost} onChange={(e) => setNewItem({ ...newItem, cost: e.target.value })} className="w-24 p-1 border rounded-lg" />
+//                   </td>
+
+//                   <td className="p-2">{calculateTotal(newItem)}</td>
+
+//                   <td className="p-2 text-right space-x-1">
+//                     <Button variant="ghost" onClick={saveNewRow}><Save className="h-4 w-4 text-green-600" /></Button>
+//                     <Button variant="ghost" onClick={() => setNewItem(null)}><X className="h-4 w-4 text-gray-600" /></Button>
+//                   </td>
+//                 </tr>
+//               )}
+//             </tbody>
+//           </table>
+
+//           {items.length === 0 && !newItem && <div className="text-center p-4 text-gray-500">No inspection items.</div>}
+//         </div>
+
+//         <div className="mt-4">
+//           <Button variant="secondary" onClick={addRow} disabled={!!newItem}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+//         </div>
+//       </Card>
+
+//       {/* Item suggestions come from categories */}
+//       <datalist id="items-list">
+//         {categories.map((cat, i) => <option key={i} value={cat.name} />)}
+//       </datalist>
+//     </div>
+//   );
+// };
+
+// export default InspectionStep;
+
+
+// code 2
+// import { useState, useEffect } from "react";
+// import Card from "@/components/ui/Card";
+// import Button from "@/components/ui/Button";
+// import { PlusCircle, Trash2, Edit, Save, X } from "lucide-react";
+
+// const InspectionStep = () => {
+//   // Vehicle details
+//   const [details, setDetails] = useState({
+//     vehicleNo: "",
+//     ownerName: "",
+//     inspectionDate: "",
+//     branch: "",
+//   });
+
+//   // Inspection items
+//   const [items, setItems] = useState(() => {
+//     try {
+//       const saved = localStorage.getItem("inspectionItems");
+//       return saved ? JSON.parse(saved) : [];
+//     } catch {
+//       return [];
+//     }
+//   });
+
+//   // Categories (loaded from localStorage "categories")
+//   const [categories, setCategories] = useState(() => {
+//     try {
+//       const saved = localStorage.getItem("categories");
+//       return saved ? JSON.parse(saved) : [];
+//     } catch {
+//       return [];
+//     }
+//   });
+
+//   // Keep categories synced
+//   useEffect(() => {
+//     const loadCats = () => {
+//       try {
+//         const saved = localStorage.getItem("categories");
+//         setCategories(saved ? JSON.parse(saved) : []);
+//       } catch {
+//         setCategories([]);
+//       }
+//     };
+//     loadCats();
+//     const onCats = () => loadCats();
+//     const onStorage = (e) => { if (e.key === "categories") loadCats(); };
+//     window.addEventListener("categoriesUpdated", onCats);
+//     window.addEventListener("storage", onStorage);
+//     return () => {
+//       window.removeEventListener("categoriesUpdated", onCats);
+//       window.removeEventListener("storage", onStorage);
+//     };
+//   }, []);
+
+//   // editing/new row state
+//   const [editingIndex, setEditingIndex] = useState(null);
+//   const [newItem, setNewItem] = useState(null);
+
+//   // multipliers mapping (apply based on category)
+//   const multipliers = {
+//     Hardware: 2,
+//     Steel: 1.5,
+//     Labour: 2,
+//     Parts: 1.5,
+//   };
+
+//   // persist items
+//   useEffect(() => {
+//     try {
+//       localStorage.setItem("inspectionItems", JSON.stringify(items));
+//     } catch {}
+//   }, [items]);
+
+//   const handleDetailChange = (e) => setDetails({ ...details, [e.target.name]: e.target.value });
+//   const saveDetails = () => { alert("Vehicle details saved!"); };
+
+//   const addRow = () => setNewItem({ item: "", category: "", condition: "OK", cost: "0" });
+
+//   const saveNewRow = () => {
+//     if (!newItem || !newItem.item?.toString().trim()) {
+//       alert("Please enter item name.");
+//       return;
+//     }
+//     setItems([...items, newItem]);
+//     setNewItem(null);
+//   };
+
+//   const editRow = (index) => setEditingIndex(index);
+//   const saveEditRow = (index) => {
+//     const it = items[index];
+//     if (!it || !it.item?.toString().trim()) {
+//       alert("Item cannot be empty.");
+//       return;
+//     }
+//     setEditingIndex(null);
+//   };
+
+//   const deleteRow = (index) => setItems(items.filter((_, i) => i !== index));
+
+//   // calculate total with multiplier
+//   const calculateTotal = (item) => {
+//     const cost = parseFloat(item?.cost) || 0;
+//     const cat = item?.category?.toString().trim();
+//     const multiplier = multipliers[cat] || 1; // default 1x for manual categories
+//     return (cost * multiplier).toFixed(2);
+//   };
+
+//   return (
+//     <div className="space-y-4">
+//       <h3 className="text-xl font-bold">Vehicle Inspection</h3>
+
+//       {/* Vehicle Details */}
+//       <Card>
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+//           <div>
+//             <label>Vehicle No:</label>
+//             <input type="text" name="vehicleNo" value={details.vehicleNo} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+//           <div>
+//             <label>Owner Name:</label>
+//             <input type="text" name="ownerName" value={details.ownerName} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+//           <div>
+//             <label>Inspection Date:</label>
+//             <input type="date" name="inspectionDate" value={details.inspectionDate} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+//           <div>
+//             <label>Branch:</label>
+//             <input type="text" name="branch" value={details.branch} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+//         </div>
+//         <div className="flex justify-end mt-4">
+//           <Button onClick={saveDetails}><Save className="h-4 w-4 mr-2" /> Save Details</Button>
+//         </div>
+//       </Card>
+
+//       {/* Inspection Items */}
+//       <Card title="Inspection Items">
+//         <div className="overflow-x-auto">
+//           <table className="w-full text-sm">
+//             <thead className="bg-gray-50 text-left">
+//               <tr>
+//                 <th className="p-2">Item</th>
+//                 <th className="p-2">Category</th>
+//                 <th className="p-2">Condition</th>
+//                 <th className="p-2">Cost (₹)</th>
+//                 <th className="p-2">Total (₹)</th>
+//                 <th className="p-2 text-right">Actions</th>
+//               </tr>
+//             </thead>
+
+//             <tbody>
+//               {items.map((it, index) =>
+//                 editingIndex === index ? (
+//                   <tr key={index} className="bg-blue-50">
+//                     <td className="p-2">
+//                       <input
+//                         type="text"
+//                         value={it.item}
+//                         onChange={(e) => {
+//                           const copy = [...items];
+//                           copy[index] = { ...copy[index], item: e.target.value };
+//                           setItems(copy);
+//                         }}
+//                         list="items-list"
+//                         placeholder="Type or select item"
+//                         className="w-full p-1 border rounded-lg"
+//                       />
+//                     </td>
+//                     <td className="p-2">
+//                       <input
+//                         type="text"
+//                         value={it.category}
+//                         onChange={(e) => {
+//                           const copy = [...items];
+//                           copy[index] = { ...copy[index], category: e.target.value };
+//                           setItems(copy);
+//                         }}
+//                         list="category-list"
+//                         placeholder="Type or select category"
+//                         className="w-full p-1 border rounded-lg"
+//                       />
+//                     </td>
+//                     <td className="p-2">
+//                       <select
+//                         value={it.condition}
+//                         onChange={(e) => {
+//                           const copy = [...items];
+//                           copy[index] = { ...copy[index], condition: e.target.value };
+//                           setItems(copy);
+//                         }}
+//                         className="w-full p-1 border rounded-lg"
+//                       >
+//                         <option>OK</option>
+//                         <option>Repair Needed</option>
+//                         <option>Replace</option>
+//                         <option>Damage</option>
+//                       </select>
+//                     </td>
+//                     <td className="p-2">
+//                       <input
+//                         type="number"
+//                         value={it.cost}
+//                         onChange={(e) => {
+//                           const copy = [...items];
+//                           copy[index] = { ...copy[index], cost: e.target.value };
+//                           setItems(copy);
+//                         }}
+//                         className="w-24 p-1 border rounded-lg"
+//                       />
+//                     </td>
+//                     <td className="p-2">{calculateTotal(it)}</td>
+//                     <td className="p-2 text-right space-x-1">
+//                       <Button variant="ghost" onClick={() => saveEditRow(index)}><Save className="h-4 w-4 text-green-600" /></Button>
+//                       <Button variant="ghost" onClick={() => setEditingIndex(null)}><X className="h-4 w-4 text-gray-600" /></Button>
+//                     </td>
+//                   </tr>
+//                 ) : (
+//                   <tr key={index}>
+//                     <td className="p-2">{it.item}</td>
+//                     <td className="p-2">{it.category}</td>
+//                     <td className="p-2">{it.condition}</td>
+//                     <td className="p-2">{it.cost}</td>
+//                     <td className="p-2">{calculateTotal(it)}</td>
+//                     <td className="p-2 text-right space-x-1">
+//                       <Button variant="ghost" onClick={() => editRow(index)}><Edit className="h-4 w-4 text-blue-600" /></Button>
+//                       <Button variant="ghost" onClick={() => deleteRow(index)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+//                     </td>
+//                   </tr>
+//                 )
+//               )}
+
+//               {newItem && (
+//                 <tr className="bg-blue-50">
+//                   <td className="p-2">
+//                     <input type="text" value={newItem.item} onChange={(e) => setNewItem({ ...newItem, item: e.target.value })} list="items-list" placeholder="Type or select item" className="w-full p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">
+//                     <input type="text" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} list="category-list" placeholder="Type or select category" className="w-full p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">
+//                     <select value={newItem.condition} onChange={(e) => setNewItem({ ...newItem, condition: e.target.value })} className="w-full p-1 border rounded-lg">
+//                       <option>OK</option>
+//                       <option>Repair Needed</option>
+//                       <option>Replace</option>
+//                       <option>Damage</option>
+//                     </select>
+//                   </td>
+//                   <td className="p-2">
+//                     <input type="number" value={newItem.cost} onChange={(e) => setNewItem({ ...newItem, cost: e.target.value })} className="w-24 p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">{calculateTotal(newItem)}</td>
+//                   <td className="p-2 text-right space-x-1">
+//                     <Button variant="ghost" onClick={saveNewRow}><Save className="h-4 w-4 text-green-600" /></Button>
+//                     <Button variant="ghost" onClick={() => setNewItem(null)}><X className="h-4 w-4 text-gray-600" /></Button>
+//                   </td>
+//                 </tr>
+//               )}
+//             </tbody>
+//           </table>
+
+//           {items.length === 0 && !newItem && <div className="text-center p-4 text-gray-500">No inspection items.</div>}
+//         </div>
+
+//         <div className="mt-4">
+//           <Button variant="secondary" onClick={addRow} disabled={!!newItem}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+//         </div>
+//       </Card>
+
+//       {/* datalist options for auto-suggest */}
+//       <datalist id="items-list">
+//         {categories.map((cat, i) => <option key={i} value={cat.name} />)}
+//       </datalist>
+
+//       <datalist id="category-list">
+//         {Object.keys(multipliers).map((name, i) => <option key={i} value={name} />)}
+//       </datalist>
+//     </div>
+//   );
+// };
+
+// export default InspectionStep;
+
+
+// unfaire
+// import { useState, useEffect } from "react";
+// import Card from "@/components/ui/Card";
+// import Button from "@/components/ui/Button";
+// import { PlusCircle, Trash2, Edit, Save, X } from "lucide-react";
+
+// const InspectionStep = () => {
+//   // Vehicle details
+//   const [details, setDetails] = useState({
+//     vehicleNo: "",
+//     ownerName: "",
+//     inspectionDate: "",
+//     branch: "",
+//   });
+
+//   // Inspection items
+//   const [items, setItems] = useState(() => {
+//     try {
+//       const saved = localStorage.getItem("inspectionItems");
+//       return saved ? JSON.parse(saved) : [];
+//     } catch {
+//       return [];
+//     }
+//   });
+
+//   // Categories from Category Manager (localStorage)
+//   const [categories, setCategories] = useState(() => {
+//     try {
+//       const saved = localStorage.getItem("categories");
+//       return saved ? JSON.parse(saved) : [];
+//     } catch {
+//       return [];
+//     }
+//   });
+
+//   // Sync categories dynamically
+//   useEffect(() => {
+//     const loadCats = () => {
+//       try {
+//         const saved = localStorage.getItem("categories");
+//         setCategories(saved ? JSON.parse(saved) : []);
+//       } catch {
+//         setCategories([]);
+//       }
+//     };
+//     loadCats();
+
+//     const onCats = () => loadCats();
+//     const onStorage = (e) => { if (e.key === "categories") loadCats(); };
+
+//     window.addEventListener("categoriesUpdated", onCats);
+//     window.addEventListener("storage", onStorage);
+
+//     return () => {
+//       window.removeEventListener("categoriesUpdated", onCats);
+//       window.removeEventListener("storage", onStorage);
+//     };
+//   }, []);
+
+//   // Editing / new row state
+//   const [editingIndex, setEditingIndex] = useState(null);
+//   const [newItem, setNewItem] = useState(null);
+
+//   // Multipliers only for specific categories
+//   const multipliers = {
+//     Hardware: 2,
+//     Steel: 1.5,
+//     Labour: 2,
+//     Parts: 1.5,
+//   };
+
+//   // Save items to localStorage
+//   useEffect(() => {
+//     try {
+//       localStorage.setItem("inspectionItems", JSON.stringify(items));
+//     } catch {}
+//   }, [items]);
+
+//   // Vehicle details handlers
+//   const handleDetailChange = (e) => setDetails({ ...details, [e.target.name]: e.target.value });
+//   const saveDetails = () => { alert("Vehicle details saved!"); };
+
+//   // Add / edit / delete row
+//   const addRow = () => setNewItem({ item: "", category: "", condition: "OK", cost: "0" });
+
+//   const saveNewRow = () => {
+//     if (!newItem || !newItem.item?.trim()) { alert("Enter item name."); return; }
+//     setItems([...items, newItem]);
+//     setNewItem(null);
+//   };
+
+//   const editRow = (index) => setEditingIndex(index);
+
+//   const saveEditRow = (index) => {
+//     const it = items[index];
+//     if (!it || !it.item?.trim()) { alert("Item cannot be empty."); return; }
+//     setEditingIndex(null);
+//   };
+
+//   const deleteRow = (index) => setItems(items.filter((_, i) => i !== index));
+
+//   // Calculate total with multiplier only for specific categories
+//   const calculateTotal = (item) => {
+//     const cost = parseFloat(item?.cost) || 0;
+//     const cat = item?.category?.trim();
+//     const multiplier = multipliers[cat] || 1; // default 1x for other/manual categories
+//     return (cost * multiplier).toFixed(2);
+//   };
+
+//   return (
+//     <div className="space-y-4">
+//       <h3 className="text-xl font-bold">Vehicle Inspection</h3>
+
+//       {/* Vehicle Details */}
+//       <Card>
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+//           <div>
+//             <label>Vehicle No:</label>
+//             <input type="text" name="vehicleNo" value={details.vehicleNo} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+//           <div>
+//             <label>Owner Name:</label>
+//             <input type="text" name="ownerName" value={details.ownerName} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+//           <div>
+//             <label>Inspection Date:</label>
+//             <input type="date" name="inspectionDate" value={details.inspectionDate} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+//           <div>
+//             <label>Branch:</label>
+//             <input type="text" name="branch" value={details.branch} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
+//           </div>
+//         </div>
+//         <div className="flex justify-end mt-4">
+//           <Button onClick={saveDetails}><Save className="h-4 w-4 mr-2" /> Save Details</Button>
+//         </div>
+//       </Card>
+
+//       {/* Inspection Items */}
+//       <Card title="Inspection Items">
+//         <div className="overflow-x-auto">
+//           <table className="w-full text-sm">
+//             <thead className="bg-gray-50 text-left">
+//               <tr>
+//                 <th className="p-2">Item</th>
+//                 <th className="p-2">Category</th>
+//                 <th className="p-2">Condition</th>
+//                 <th className="p-2">Cost (₹)</th>
+//                    <th className="p-2">Total (₹)</th>
+                   
+             
+                
+//                 <th className="p-2 text-left">Actions</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {items.map((it, index) =>
+//                 editingIndex === index ? (
+//                   <tr key={index} className="bg-blue-50">
+//                     <td className="p-2">
+//                       <input
+//                         type="text"
+//                         value={it.item}
+//                         onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], item: e.target.value }; 
+//                         setItems(copy); }}
+//                         list="items-list"
+//                         placeholder="Type or select item"
+//                         className="w-full p-1 border rounded-lg"
+//                       />
+//                     </td>
+//                     <td className="p-2">
+//                       <input
+//                         type="text"
+//                         value={it.category}
+//                         onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], category: e.target.value }; 
+//                         setItems(copy); }}
+//                         list="items-list"
+//                         placeholder="Type or select category"
+//                         className="w-full p-1 border rounded-lg"
+//                       />
+//                     </td>
+
+
+//                     <td className="p-2">
+//                       <select value={it.condition} onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], condition: e.target.value }; setItems(copy); }} className="w-full p-1 border rounded-lg">
+//                         <option>OK</option>
+//                         <option>Repair Needed</option>
+//                         <option>Replace</option>
+//                         <option>Damage</option>
+//                       </select>
+//                     </td>
+//                     <td className="p-2">
+//                       <input type="number"
+//                        value={it.cost}
+//                         onChange={(e) => 
+//                         { const copy = [...items]; copy[index] = { ...copy[index], cost: e.target.value };
+//                          setItems(copy); }} 
+//                          className="w-24 p-1 border rounded-lg" />
+//                     </td>
+
+    
+                        
+
+
+                    
+
+                            
+
+
+
+
+
+//                     <td className="p-2">{calculateTotal(it)}</td>
+
+//                     <td className="p-2 text-right space-x-1">
+
+//                            <Button variant="ghost" onClick={() => saveEditRow(index)}><Save className="h-4 w-4 text-green-600" /></Button>
+
+//                       <Button variant="ghost" onClick={() => setEditingIndex(null)}><X className="h-4 w-4 text-gray-600" /></Button>
+
+//                     </td>
+//                   </tr>
+//                 ) : (
+//                   <tr key={index}>
+//                     <td className="p-2">{it.item}</td>
+//                     <td className="p-2">{it.category}</td>
+//                     <td className="p-2">{it.condition}</td>
+//                     <td className="p-2">{it.cost}</td>
+//                     <td className="p-2">{calculateTotal(it)}</td>
+//                     <td className="p-2 text-right space-x-1">
+//                       <Button variant="ghost" onClick={() => editRow(index)}><Edit className="h-4 w-4 text-blue-600" /></Button>
+//                       <Button variant="ghost" onClick={() => deleteRow(index)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+//                     </td>
+//                   </tr>
+//                 )
+//               )}
+
+//               {newItem && (
+//                 <tr className="bg-blue-50">
+//                   <td className="p-2">
+//                     <input type="text" value={newItem.item} onChange={(e) => setNewItem({ ...newItem, item: e.target.value })} list="items-list" placeholder="Type or select item" className="w-full p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">
+//                     <input type="text" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} list="items-list" placeholder="Type or select category" className="w-full p-1 border rounded-lg" />
+//                   </td>
+//                   <td className="p-2">
+//                     <select value={newItem.condition} onChange={(e) => setNewItem({ ...newItem, condition: e.target.value })} className="w-full p-1 border rounded-lg">
+//                       <option>OK</option>
+//                       <option>Repair Needed</option>
+//                       <option>Replace</option>
+//                       <option>Damage</option>
+//                     </select>
+//                   </td>
+//                   <td className="p-2">
+//                     <input type="number" value={newItem.cost} onChange={(e) => setNewItem({ ...newItem, cost: e.target.value })} className="w-24 p-1 border rounded-lg" />
+//                   </td>
+
+
+
+
+
+                     
+
+//                   <td className="p-2">{calculateTotal(newItem)}</td>
+//                   <td className="p-2 text-right space-x-1">
+//                     <Button variant="ghost" onClick={saveNewRow}><Save className="h-4 w-4 text-green-600" /></Button>
+//                     <Button variant="ghost" onClick={() => setNewItem(null)}><X className="h-4 w-4 text-gray-600" /></Button>
+//                   </td>
+
+
+
+                      
+
+
+
+//                 </tr>
+//               )}
+
+
+
+
+//             </tbody>
+//           </table>
+
+//           {items.length === 0 && !newItem && <div className="text-center p-4 text-gray-500">No inspection items.</div>}
+//         </div>
+
+//         <div className="mt-4">
+//           <Button variant="secondary" onClick={addRow} disabled={!!newItem}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
+//         </div>
+//       </Card>
+
+//       {/* Datalist for suggestions only from Category Manager */}
+//       <datalist id="items-list">
+//         {categories.map((cat, i) => <option key={i} value={cat.name} />)}
+//       </datalist>
+//     </div>
+//   );
+// };
+
+// export default InspectionStep;
+
+
 
 import { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
@@ -1683,7 +3086,7 @@ import Button from "@/components/ui/Button";
 import { PlusCircle, Trash2, Edit, Save, X } from "lucide-react";
 
 const InspectionStep = () => {
-  // 👉 Vehicle ka basic details (inputs ke liye ek object use kar rahe hain)
+  // Vehicle details
   const [details, setDetails] = useState({
     vehicleNo: "",
     ownerName: "",
@@ -1691,73 +3094,96 @@ const InspectionStep = () => {
     branch: "",
   });
 
-  // 👉 Inspection Items (localStorage se load hoga agar pehle se save hai)
+  // Inspection items
   const [items, setItems] = useState(() => {
-    const saved = localStorage.getItem("inspectionItems");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("inspectionItems");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
-  // 👉 Edit karne ke liye row index save karte hain
-  const [editingIndex, setEditingIndex] = useState(null);
+  // Categories from Category Manager (localStorage)
+  const [categories, setCategories] = useState(() => {
+    try {
+      const saved = localStorage.getItem("categories");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
-  // 👉 Naya item add karne ke liye temporary state
+  // Sync categories dynamically
+  useEffect(() => {
+    const loadCats = () => {
+      try {
+        const saved = localStorage.getItem("categories");
+        setCategories(saved ? JSON.parse(saved) : []);
+      } catch {
+        setCategories([]);
+      }
+    };
+    loadCats();
+
+    const onCats = () => loadCats();
+    const onStorage = (e) => { if (e.key === "categories") loadCats(); };
+
+    window.addEventListener("categoriesUpdated", onCats);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("categoriesUpdated", onCats);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
+  // Editing / new row state
+  const [editingIndex, setEditingIndex] = useState(null);
   const [newItem, setNewItem] = useState(null);
 
-  // 👉 Multiplier table (alag-alag item ka cost multiply karne ke liye)
+  // Default multipliers
   const multipliers = {
-    Parts: 1.5,
-    Labour: 2,
     Hardware: 2,
     Steel: 1.5,
+    Labour: 2,
+    Parts: 1.5,
   };
 
-  // 👉 Jab bhi items update hote hain, unhe localStorage me save kar do
+  // Save items to localStorage
   useEffect(() => {
-    localStorage.setItem("inspectionItems", JSON.stringify(items));
+    try {
+      localStorage.setItem("inspectionItems", JSON.stringify(items));
+    } catch {}
   }, [items]);
 
-  // 👉 Vehicle Details ke inputs ke liye change handler
-  const handleDetailChange = (e) => {
-    setDetails({ ...details, [e.target.name]: e.target.value });
-  };
+  // Vehicle details handlers
+  const handleDetailChange = (e) => setDetails({ ...details, [e.target.name]: e.target.value });
+  const saveDetails = () => { alert("Vehicle details saved!"); };
 
-  // 👉 Save vehicle details (abhi ke liye console + alert hi rakha hai)
-  const saveDetails = () => {
-    console.log("Vehicle details:", details);
-    alert("Vehicle details saved!");
-  };
+  // Add / edit / delete row
+  const addRow = () => setNewItem({ item: "", category: "", condition: "OK", cost: "0", multiplier: 1 });
 
-  // 👉 Naya row add karna
-  const addRow = () => {
-    setNewItem({ item: "", category: "", condition: "OK", cost: "0" });
-  };
-
-  // 👉 Naya row save karna
   const saveNewRow = () => {
+    if (!newItem || !newItem.item?.trim()) { alert("Enter item name."); return; }
     setItems([...items, newItem]);
     setNewItem(null);
   };
 
-  // 👉 Row ko edit mode me lana
-  const editRow = (index) => {
-    setEditingIndex(index);
-  };
+  const editRow = (index) => setEditingIndex(index);
 
-  // 👉 Edited row save karna
-  const saveEditRow = () => {
+  const saveEditRow = (index) => {
+    const it = items[index];
+    if (!it || !it.item?.trim()) { alert("Item cannot be empty."); return; }
     setEditingIndex(null);
   };
 
-  // 👉 Row delete karna
-  const deleteRow = (index) => {
-    const updated = items.filter((_, i) => i !== index);
-    setItems(updated);
-  };
+  const deleteRow = (index) => setItems(items.filter((_, i) => i !== index));
 
-  // 👉 Cost × multiplier se total calculate karna
+  // Calculate total with multiplier (manual or default)
   const calculateTotal = (item) => {
-    const cost = parseFloat(item.cost) || 0;
-    const multiplier = multipliers[item.item] || 1;
+    const cost = parseFloat(item?.cost) || 0;
+    const multiplier = parseFloat(item?.multiplier) || multipliers[item?.category?.trim()] || 1;
     return (cost * multiplier).toFixed(2);
   };
 
@@ -1765,67 +3191,32 @@ const InspectionStep = () => {
     <div className="space-y-4">
       <h3 className="text-xl font-bold">Vehicle Inspection</h3>
 
-      {/* 🚗 Card 1 - Vehicle Details */}
+      {/* Vehicle Details */}
       <Card>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          {/* Vehicle No */}
           <div>
             <label>Vehicle No:</label>
-            <input
-              type="text"
-              name="vehicleNo"
-              value={details.vehicleNo}
-              onChange={handleDetailChange}
-              className="w-full mt-1 p-2 border rounded-lg"
-            />
+            <input type="text" name="vehicleNo" value={details.vehicleNo} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
           </div>
-
-          {/* Owner Name */}
           <div>
             <label>Owner Name:</label>
-            <input
-              type="text"
-              name="ownerName"
-              value={details.ownerName}
-              onChange={handleDetailChange}
-              className="w-full mt-1 p-2 border rounded-lg"
-            />
+            <input type="text" name="ownerName" value={details.ownerName} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
           </div>
-
-          {/* Inspection Date */}
           <div>
             <label>Inspection Date:</label>
-            <input
-              type="date"
-              name="inspectionDate"
-              value={details.inspectionDate}
-              onChange={handleDetailChange}
-              className="w-full mt-1 p-2 border rounded-lg"
-            />
+            <input type="date" name="inspectionDate" value={details.inspectionDate} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
           </div>
-
-          {/* Branch */}
           <div>
             <label>Branch:</label>
-            <input
-              type="text"
-              name="branch"
-              value={details.branch}
-              onChange={handleDetailChange}
-              className="w-full mt-1 p-2 border rounded-lg"
-            />
+            <input type="text" name="branch" value={details.branch} onChange={handleDetailChange} className="w-full mt-1 p-2 border rounded-lg" />
           </div>
         </div>
-
-        {/* Save Vehicle Details Button */}
         <div className="flex justify-end mt-4">
-          <Button onClick={saveDetails}>
-            <Save className="h-4 w-4 mr-2" /> Save Details
-          </Button>
+          <Button onClick={saveDetails}><Save className="h-4 w-4 mr-2" /> Save Details</Button>
         </div>
       </Card>
 
-      {/* 📝 Card 2 - Inspection Items */}
+      {/* Inspection Items */}
       <Card title="Inspection Items">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -1835,190 +3226,125 @@ const InspectionStep = () => {
                 <th className="p-2">Category</th>
                 <th className="p-2">Condition</th>
                 <th className="p-2">Cost (₹)</th>
+                <th className="p-2">Multiplier</th>
                 <th className="p-2">Total (₹)</th>
                 <th className="p-2 text-right">Actions</th>
               </tr>
             </thead>
-
             <tbody>
-              {/* 👉 Existing Rows */}
-              {items.map((item, index) =>
+              {items.map((it, index) =>
                 editingIndex === index ? (
-                  // Editable row
                   <tr key={index} className="bg-blue-50">
                     <td className="p-2">
                       <input
                         type="text"
-                        value={item.item}
-                        onChange={(e) => {
-                          const copy = [...items];
-                          copy[index].item = e.target.value;
-                          setItems(copy);
-                        }}
+                        value={it.item}
+                        onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], item: e.target.value }; setItems(copy); }}
                         list="items-list"
                         placeholder="Type or select item"
                         className="w-full p-1 border rounded-lg"
                       />
-                      <datalist id="items-list">
-                        <option value="Parts" />
-                        <option value="Labour" />
-                        <option value="Hardware" />
-                        <option value="Steel" />
-                      </datalist>
                     </td>
-
                     <td className="p-2">
                       <input
                         type="text"
-                        value={item.category}
-                        onChange={(e) => {
-                          const copy = [...items];
-                          copy[index].category = e.target.value;
-                          setItems(copy);
-                        }}
+                        value={it.category}
+                        onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], category: e.target.value }; setItems(copy); }}
+                        list="items-list"
+                        placeholder="Type or select category"
                         className="w-full p-1 border rounded-lg"
                       />
                     </td>
-
                     <td className="p-2">
-                      <select
-                        value={item.condition}
-                        onChange={(e) => {
-                          const copy = [...items];
-                          copy[index].condition = e.target.value;
-                          setItems(copy);
-                        }}
-                        className="w-full p-1 border rounded-lg"
-                      >
+                      <select value={it.condition} onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], condition: e.target.value }; setItems(copy); }} className="w-full p-1 border rounded-lg">
                         <option>OK</option>
                         <option>Repair Needed</option>
                         <option>Replace</option>
+                        <option>Damage</option>
                       </select>
                     </td>
-
                     <td className="p-2">
-                      <input
-                        type="number"
-                        value={item.cost}
-                        onChange={(e) => {
-                          const copy = [...items];
-                          copy[index].cost = e.target.value;
-                          setItems(copy);
-                        }}
+                      <input type="number"
+                        value={it.cost}
+                        onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], cost: e.target.value }; setItems(copy); }}
                         className="w-24 p-1 border rounded-lg"
                       />
                     </td>
-
-                    <td className="p-2">{calculateTotal(item)}</td>
-
+                    <td className="p-2">
+                      <input
+                        type="number"
+                        value={it.multiplier ?? multipliers[it.category] ?? 1}
+                        onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], multiplier: parseFloat(e.target.value) || 1 }; setItems(copy); }}
+                        className="w-24 p-1 border rounded-lg"
+                        placeholder="Multiplier"
+                      />
+                    </td>
+                    <td className="p-2">{calculateTotal(it)}</td>
                     <td className="p-2 text-right space-x-1">
-                      <Button variant="ghost" onClick={() => saveEditRow(index)}>
-                        <Save className="h-4 w-4 text-green-600" />
-                      </Button>
-                      <Button variant="ghost" onClick={() => setEditingIndex(null)}>
-                        <X className="h-4 w-4 text-gray-600" />
-                      </Button>
+                      <Button variant="ghost" onClick={() => saveEditRow(index)}><Save className="h-4 w-4 text-green-600" /></Button>
+                      <Button variant="ghost" onClick={() => setEditingIndex(null)}><X className="h-4 w-4 text-gray-600" /></Button>
                     </td>
                   </tr>
                 ) : (
-                  // Normal row
                   <tr key={index}>
-                    <td className="p-2">{item.item}</td>
-                    <td className="p-2">{item.category}</td>
-                    <td className="p-2">{item.condition}</td>
-                    <td className="p-2">{item.cost}</td>
-                    <td className="p-2">{calculateTotal(item)}</td>
+                    <td className="p-2">{it.item}</td>
+                    <td className="p-2">{it.category}</td>
+                    <td className="p-2">{it.condition}</td>
+                    <td className="p-2">{it.cost}</td>
+                    <td className="p-2">{it.multiplier ?? multipliers[it.category] ?? 1}</td>
+                    <td className="p-2">{calculateTotal(it)}</td>
                     <td className="p-2 text-right space-x-1">
-                      <Button variant="ghost" onClick={() => editRow(index)}>
-                        <Edit className="h-4 w-4 text-blue-600" />
-                      </Button>
-                      <Button variant="ghost" onClick={() => deleteRow(index)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                      <Button variant="ghost" onClick={() => editRow(index)}><Edit className="h-4 w-4 text-blue-600" /></Button>
+                      <Button variant="ghost" onClick={() => deleteRow(index)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                     </td>
                   </tr>
                 )
               )}
 
-              {/* 👉 New Row */}
               {newItem && (
                 <tr className="bg-blue-50">
                   <td className="p-2">
-                    <input
-                      type="text"
-                      value={newItem.item}
-                      onChange={(e) => setNewItem({ ...newItem, item: e.target.value })}
-                      list="items-list"
-                      placeholder="Type or select item"
-                      className="w-full p-1 border rounded-lg"
-                    />
-                    <datalist id="items-list">
-                      <option value="Parts" />
-                      <option value="Labour" />
-                      <option value="Hardware" />
-                      <option value="Steel" />
-                    </datalist>
+                    <input type="text" value={newItem.item} onChange={(e) => setNewItem({ ...newItem, item: e.target.value })} list="items-list" placeholder="Type or select item" className="w-full p-1 border rounded-lg" />
                   </td>
-
                   <td className="p-2">
-                    <input
-                      type="text"
-                      value={newItem.category}
-                      onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                      className="w-full p-1 border rounded-lg"
-                    />
+                    <input type="text" value={newItem.category} onChange={(e) => setNewItem({ ...newItem, category: e.target.value })} list="items-list" placeholder="Type or select category" className="w-full p-1 border rounded-lg" />
                   </td>
-
                   <td className="p-2">
-                    <select
-                      value={newItem.condition}
-                      onChange={(e) => setNewItem({ ...newItem, condition: e.target.value })}
-                      className="w-full p-1 border rounded-lg"
-                    >
+                    <select value={newItem.condition} onChange={(e) => setNewItem({ ...newItem, condition: e.target.value })} className="w-full p-1 border rounded-lg">
                       <option>OK</option>
                       <option>Repair Needed</option>
                       <option>Replace</option>
                       <option>Damage</option>
                     </select>
                   </td>
-
                   <td className="p-2">
-                    <input
-                      type="number"
-                      value={newItem.cost}
-                      onChange={(e) => setNewItem({ ...newItem, cost: e.target.value })}
-                      className="w-24 p-1 border rounded-lg"
-                    />
+                    <input type="number" value={newItem.cost} onChange={(e) => setNewItem({ ...newItem, cost: e.target.value })} className="w-24 p-1 border rounded-lg" />
                   </td>
-
+                  <td className="p-2">
+                    <input type="number" value={newItem.multiplier ?? multipliers[newItem.category] ?? 1} onChange={(e) => setNewItem({ ...newItem, multiplier: parseFloat(e.target.value) || 1 })} className="w-24 p-1 border rounded-lg" placeholder="Multiplier" />
+                  </td>
                   <td className="p-2">{calculateTotal(newItem)}</td>
-
                   <td className="p-2 text-right space-x-1">
-                    <Button variant="ghost" onClick={saveNewRow}>
-                      <Save className="h-4 w-4 text-green-600" />
-                    </Button>
-                    <Button variant="ghost" onClick={() => setNewItem(null)}>
-                      <X className="h-4 w-4 text-gray-600" />
-                    </Button>
+                    <Button variant="ghost" onClick={saveNewRow}><Save className="h-4 w-4 text-green-600" /></Button>
+                    <Button variant="ghost" onClick={() => setNewItem(null)}><X className="h-4 w-4 text-gray-600" /></Button>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
 
-          {/* 👉 Empty state */}
-          {items.length === 0 && !newItem && (
-            <div className="text-center p-4 text-gray-500">No inspection items.</div>
-          )}
+          {items.length === 0 && !newItem && <div className="text-center p-4 text-gray-500">No inspection items.</div>}
         </div>
 
-        {/* Add Item Button */}
         <div className="mt-4">
-          <Button variant="secondary" onClick={addRow} disabled={!!newItem}>
-            <PlusCircle className="h-4 w-4 mr-2" /> Add Item
-          </Button>
+          <Button variant="secondary" onClick={addRow} disabled={!!newItem}><PlusCircle className="h-4 w-4 mr-2" /> Add Item</Button>
         </div>
       </Card>
+
+      {/* Datalist for suggestions only from Category Manager */}
+      <datalist id="items-list">
+        {categories.map((cat, i) => <option key={i} value={cat.name} />)}
+      </datalist>
     </div>
   );
 };

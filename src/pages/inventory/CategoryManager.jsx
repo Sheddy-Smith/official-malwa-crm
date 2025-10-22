@@ -401,55 +401,335 @@
 
 // export default CategoryManager;
 
-// Experiment Final code
 
-import React, { useState } from "react";
+
+
+
+// Experiment Final code  and perfect code :-
+// import React, { useState } from "react";
+// import Card from "@/components/ui/Card";
+
+// const CategoryManager = ({ categories, setCategories }) => {
+//   const [newCategory, setNewCategory] = useState("");
+//   const [editIndex, setEditIndex] = useState(null);
+//   const [editName, setEditName] = useState("");
+
+//   // Add category
+//   const handleAdd = () => {
+//     if (!newCategory.trim()) return;
+
+//     // Prevent duplicate categories
+//     if (
+//       categories.some(
+//         (cat) => cat.name.toLowerCase() === newCategory.toLowerCase()
+//       )
+//     ) {
+//       alert("Category already exists!");
+//       return;
+//     }
+
+//     // Add new category as object {name: "category"}
+//     setCategories([...categories, { name: newCategory }]);
+//     localStorage.setItem("categories", JSON.stringify([...categories, { name: newCategory }]));
+//     setNewCategory("");
+//   };
+
+//   // Delete category
+//   const handleDelete = (index) => {
+//     const updated = categories.filter((_, i) => i !== index);
+//     setCategories(updated);
+//   };
+
+//   // Start edit
+//   const handleEdit = (index, name) => {
+//     setEditIndex(index);
+//     setEditName(name);
+//   };
+
+//   // Save edit
+//   const handleSave = () => {
+//     if (!editName.trim()) return;
+
+//     const updated = categories.map((cat, i) =>
+//       i === editIndex ? { name: editName } : cat
+//     );
+//     setCategories(updated);
+//     setEditIndex(null);
+//     setEditName("");
+//   };
+
+//   return (
+//     <Card>
+//       <div className="p-4 border rounded">
+//         <h2 className="text-xl font-bold mb-4">Category Manager</h2>
+
+//         {/* Add input */}
+//         <div className="flex mb-4 gap-2">
+//           <input
+//             type="text"
+//             value={newCategory}
+//             onChange={(e) => setNewCategory(e.target.value)}
+//             placeholder="Enter new category"
+//             className="border p-2 flex-1"
+//           />
+//           <button onClick={handleAdd} className="bg-blue-500 text-white px-4">
+//             Add
+//           </button>
+//         </div>
+
+//         {/* Category Table */}
+//         <table className="w-full border-collapse border">
+//           <thead>
+//             <tr className="bg-gray-200">
+//               <th className="border p-2">S.No</th>
+//               <th className="border p-2">Name</th>
+//               <th className="border p-2">Actions</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {categories.map((cat, index) => (
+//               <tr key={index}>
+//                 <td className="border p-2">{index + 1}</td>
+//                 <td className="border p-2">
+//                   {editIndex === index ? (
+//                     <input
+//                       type="text"
+//                       value={editName}
+//                       onChange={(e) => setEditName(e.target.value)}
+//                       className="border p-1"
+//                     />
+//                   ) : (
+//                     cat.name
+//                   )}
+//                 </td>
+//                 <td className="border p-2 flex gap-2">
+//                   {editIndex === index ? (
+//                     <button
+//                       onClick={handleSave}
+//                       className="bg-green-500 text-white px-2"
+//                     >
+//                       Save
+//                     </button>
+//                   ) : (
+//                     <button
+//                       onClick={() => handleEdit(index, cat.name)}
+//                       className="bg-yellow-500 text-white px-2"
+//                     >
+//                       Edit
+//                     </button>
+//                   )}
+//                   <button
+//                     onClick={() => handleDelete(index)}
+//                     className="bg-red-500 text-white px-2"
+//                   >
+//                     Delete
+//                   </button>
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+//     </Card>
+//   );
+// };
+
+// export default CategoryManager;
+
+
+
+
+
+
+
+// 1 dummy code 
+// import React, { useState, useEffect } from "react";
+// import Card from "@/components/ui/Card";
+
+// const CategoryManager = ({ categories: propCategories, setCategories: propSetCategories }) => {
+//   const [categories, setCategories] = useState(() => {
+//     if (propCategories && Array.isArray(propCategories)) return propCategories;
+//     try {
+//       const saved = localStorage.getItem("categories");
+//       return saved ? JSON.parse(saved) : [];
+//     } catch {
+//       return [];
+//     }
+//   });
+
+//   const [newCategory, setNewCategory] = useState("");
+//   const [editIndex, setEditIndex] = useState(null);
+//   const [editName, setEditName] = useState("");
+
+//   useEffect(() => {
+//     if (typeof propSetCategories === "function") propSetCategories(categories);
+//   }, [categories, propSetCategories]);
+
+//   // persist + notify same-tab
+//   useEffect(() => {
+//     try {
+//       localStorage.setItem("categories", JSON.stringify(categories));
+//       window.dispatchEvent(new Event("categoriesUpdated"));
+//     } catch {
+//       // ignore
+//     }
+//   }, [categories]);
+
+//   const handleAdd = () => {
+//     if (!newCategory.trim()) return;
+//     const exists = categories.some((c) => c?.name?.toString().toLowerCase() === newCategory.toLowerCase());
+//     if (exists) {
+//       alert("Category already exists!");
+//       return;
+//     }
+//     setCategories([...categories, { name: newCategory }]);
+//     setNewCategory("");
+//   };
+
+//   const handleDelete = (index) => {
+//     const updated = categories.filter((_, i) => i !== index);
+//     setCategories(updated);
+//   };
+
+//   const handleEdit = (index, name) => {
+//     setEditIndex(index);
+//     setEditName(name);
+//   };
+
+//   const handleSave = () => {
+//     if (!editName.trim()) return;
+//     const updated = categories.map((cat, i) => (i === editIndex ? { name: editName } : cat));
+//     setCategories(updated);
+//     setEditIndex(null);
+//     setEditName("");
+//   };
+
+//   return (
+//     <Card>
+//       <div className="p-4 border rounded">
+//         <h2 className="text-xl font-bold mb-4">Category Manager</h2>
+
+//         <div className="flex mb-4 gap-2">
+//           <input
+//             type="text"
+//             value={newCategory}
+//             onChange={(e) => setNewCategory(e.target.value)}
+//             placeholder="Enter new category"
+//             className="border p-2 flex-1"
+//           />
+//           <button onClick={handleAdd} className="bg-blue-500 text-white px-4">
+//             Add
+//           </button>
+//         </div>
+
+//         <table className="w-full border-collapse border">
+//           <thead>
+//             <tr className="bg-gray-200">
+//               <th className="border p-2">S.No</th>
+//               <th className="border p-2">Name</th>
+//               <th className="border p-2">Actions</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {categories.map((cat, index) => (
+//               <tr key={index}>
+//                 <td className="border p-2">{index + 1}</td>
+//                 <td className="border p-2">
+//                   {editIndex === index ? (
+//                     <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="border p-1" />
+//                   ) : (
+//                     cat.name
+//                   )}
+//                 </td>
+//                 <td className="border p-2 flex gap-2">
+//                   {editIndex === index ? (
+//                     <button onClick={handleSave} className="bg-green-500 text-white px-2">Save</button>
+//                   ) : (
+//                     <button onClick={() => handleEdit(index, cat.name)} className="bg-yellow-500 text-white px-2">Edit</button>
+//                   )}
+//                   <button onClick={() => handleDelete(index)} className="bg-red-500 text-white px-2">Delete</button>
+//                 </td>
+//               </tr>
+//             ))}
+
+//             {categories.length === 0 && (
+//               <tr>
+//                 <td colSpan={3} className="text-center p-4 text-gray-500">No categories added.</td>
+//               </tr>
+//             )}
+//           </tbody>
+//         </table>
+//       </div>
+//     </Card>
+//   );
+// };
+
+// export default CategoryManager;
+
+
+
+
+import React, { useState, useEffect } from "react";
 import Card from "@/components/ui/Card";
 
-const CategoryManager = ({ categories, setCategories }) => {
+const CategoryManager = ({ categories: propCategories, setCategories: propSetCategories }) => {
+  const [categories, setCategories] = useState(() => {
+    if (propCategories && Array.isArray(propCategories)) return propCategories;
+    try {
+      const saved = localStorage.getItem("categories");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [newCategory, setNewCategory] = useState("");
   const [editIndex, setEditIndex] = useState(null);
   const [editName, setEditName] = useState("");
 
-  // Add category
-  const handleAdd = () => {
-    if (!newCategory.trim()) return;
+  useEffect(() => {
+    if (typeof propSetCategories === "function") propSetCategories(categories);
+  }, [categories, propSetCategories]);
 
-    // Prevent duplicate categories
-    if (
-      categories.some(
-        (cat) => cat.name.toLowerCase() === newCategory.toLowerCase()
-      )
-    ) {
+  // persist + notify same-tab listeners
+  useEffect(() => {
+    try {
+      localStorage.setItem("categories", JSON.stringify(categories));
+      // notify same-tab listeners immediately
+      window.dispatchEvent(new Event("categoriesUpdated"));
+    } catch {
+      // ignore
+    }
+  }, [categories]);
+
+  const handleAdd = () => {
+    const name = (newCategory || "").toString().trim();
+    if (!name) return;
+
+    const exists = categories.some((c) => c?.name?.toString().toLowerCase() === name.toLowerCase());
+    if (exists) {
       alert("Category already exists!");
       return;
     }
 
-    // Add new category as object {name: "category"}
-    setCategories([...categories, { name: newCategory }]);
-    localStorage.setItem("categories", JSON.stringify([...categories, { name: newCategory }]));
+    setCategories([...categories, { name }]);
     setNewCategory("");
   };
 
-  // Delete category
   const handleDelete = (index) => {
     const updated = categories.filter((_, i) => i !== index);
     setCategories(updated);
   };
 
-  // Start edit
   const handleEdit = (index, name) => {
     setEditIndex(index);
     setEditName(name);
   };
 
-  // Save edit
   const handleSave = () => {
-    if (!editName.trim()) return;
-
-    const updated = categories.map((cat, i) =>
-      i === editIndex ? { name: editName } : cat
-    );
+    const name = (editName || "").toString().trim();
+    if (!name) return;
+    const updated = categories.map((cat, i) => (i === editIndex ? { name } : cat));
     setCategories(updated);
     setEditIndex(null);
     setEditName("");
@@ -458,9 +738,9 @@ const CategoryManager = ({ categories, setCategories }) => {
   return (
     <Card>
       <div className="p-4 border rounded">
-        <h2 className="text-xl font-bold mb-4">Category Manager</h2>
+        <h2 className="text-xl font-bold mb-2">Category Manager</h2>
+        <p className="text-sm font-bold mb-2 text-red-500">Add Your categories in First Capital Letter</p>
 
-        {/* Add input */}
         <div className="flex mb-4 gap-2">
           <input
             type="text"
@@ -474,7 +754,6 @@ const CategoryManager = ({ categories, setCategories }) => {
           </button>
         </div>
 
-        {/* Category Table */}
         <table className="w-full border-collapse border">
           <thead>
             <tr className="bg-gray-200">
@@ -489,41 +768,27 @@ const CategoryManager = ({ categories, setCategories }) => {
                 <td className="border p-2">{index + 1}</td>
                 <td className="border p-2">
                   {editIndex === index ? (
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="border p-1"
-                    />
+                    <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="border p-1" />
                   ) : (
                     cat.name
                   )}
                 </td>
                 <td className="border p-2 flex gap-2">
                   {editIndex === index ? (
-                    <button
-                      onClick={handleSave}
-                      className="bg-green-500 text-white px-2"
-                    >
-                      Save
-                    </button>
+                    <button onClick={handleSave} className="bg-green-500 text-white px-2">Save</button>
                   ) : (
-                    <button
-                      onClick={() => handleEdit(index, cat.name)}
-                      className="bg-yellow-500 text-white px-2"
-                    >
-                      Edit
-                    </button>
+                    <button onClick={() => handleEdit(index, cat.name)} className="bg-yellow-500 text-white px-2">Edit</button>
                   )}
-                  <button
-                    onClick={() => handleDelete(index)}
-                    className="bg-red-500 text-white px-2"
-                  >
-                    Delete
-                  </button>
+                  <button onClick={() => handleDelete(index)} className="bg-red-500 text-white px-2">Delete</button>
                 </td>
               </tr>
             ))}
+
+            {categories.length === 0 && (
+              <tr>
+                <td colSpan={3} className="text-center p-4 text-gray-500">No categories added.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

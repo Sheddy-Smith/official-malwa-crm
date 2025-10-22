@@ -285,177 +285,341 @@
 
 
 
-import React, { useState } from "react";
+// import React, { useState } from "react";
 
-const StockTab = ({ categories }) => {
-  // -----------------------------
-  // Stock Items state
-  // -----------------------------
-  const [stockItems, setStockItems] = useState([
-    { item: "", category: "", qty: 0, rate: 0, valuation: 0 },
-  ]);
+// const StockTab = ({ categories }) => {
+//   // -----------------------------
+//   // Stock Items state
+//   // -----------------------------
+//   const [stockItems, setStockItems] = useState([
+//     { item: "", category: "", qty: 0, rate: 0, valuation: 0 },
+//   ]);
 
-  // -----------------------------
-  // Example items per category
-  // Ye aap future me API ya localStorage se le sakte ho
-  // -----------------------------
-  const itemsByCategory = {
-    Parts: ["Brake Pad", "Clutch", "Gear"],
-    Labour: ["Painting", "Welding", "Polishing"],
-    Hardware: ["Nuts", "Bolts", "Screws"],
-    Steel: ["Beam", "Rod", "Sheet"],
-  };
+//   // -----------------------------
+//   // Example items per category
+//   // Ye aap future me API ya localStorage se le sakte ho
+//   // -----------------------------
+//   const itemsByCategory = {
+//     Parts: ["Brake Pad", "Clutch", "Gear"],
+//     Labour: ["Painting", "Welding", "Polishing"],
+//     Hardware: ["Nuts", "Bolts", "Screws"],
+//     Steel: ["Beam", "Rod", "Sheet"],
+//   };
 
-  // -----------------------------
-  // Add new row
-  // -----------------------------
-  const handleAddRow = () => {
-    setStockItems([
-      ...stockItems,
-      { item: "", category: "", qty: 0, rate: 0, valuation: 0 },
-    ]);
-  };
+//   // -----------------------------
+//   // Add new row
+//   // -----------------------------
+//   const handleAddRow = () => {
+//     setStockItems([
+//       ...stockItems,
+//       { item: "", category: "", qty: 0, rate: 0, valuation: 0 },
+//     ]);
+//   };
 
-  // -----------------------------
-  // Delete row
-  // -----------------------------
-  const handleDeleteRow = (index) => {
-    const updated = stockItems.filter((_, i) => i !== index);
-    setStockItems(updated);
-  };
+//   // -----------------------------
+//   // Delete row
+//   // -----------------------------
+//   const handleDeleteRow = (index) => {
+//     const updated = stockItems.filter((_, i) => i !== index);
+//     setStockItems(updated);
+//   };
 
-  // -----------------------------
-  // Handle change in any field
-  // -----------------------------
-  const handleChange = (index, field, value) => {
-    const updated = stockItems.map((row, i) => {
-      if (i === index) {
-        const newRow = { ...row, [field]: value };
+//   // -----------------------------
+//   // Handle change in any field
+//   // -----------------------------
+//   const handleChange = (index, field, value) => {
+//     const updated = stockItems.map((row, i) => {
+//       if (i === index) {
+//         const newRow = { ...row, [field]: value };
 
-        // Auto calculate valuation if qty or rate changes
-        if (field === "qty" || field === "rate") {
-          const qty = field === "qty" ? Number(value) : Number(row.qty);
-          const rate = field === "rate" ? Number(value) : Number(row.rate);
-          newRow.valuation = qty * rate;
-        }
+//         // Auto calculate valuation if qty or rate changes
+//         if (field === "qty" || field === "rate") {
+//           const qty = field === "qty" ? Number(value) : Number(row.qty);
+//           const rate = field === "rate" ? Number(value) : Number(row.rate);
+//           newRow.valuation = qty * rate;
+//         }
 
-        // Auto clear item if category changes
-        if (field === "category") {
-          newRow.item = ""; // category change -> reset item
-        }
+//         // Auto clear item if category changes
+//         if (field === "category") {
+//           newRow.item = ""; // category change -> reset item
+//         }
 
-        return newRow;
+//         return newRow;
+//       }
+//       return row;
+//     });
+//     setStockItems(updated);
+//   };
+
+//   return (
+//     <div className="p-4 border rounded mt-4">
+//       <h2 className="text-xl font-bold mb-4">Stock Tab</h2>
+
+//       <table className="w-full border-collapse border">
+//         <thead>
+//           <tr className="bg-gray-200">
+//             <th className="border p-2">S.No</th>
+//             <th className="border p-2">Item</th>
+//             <th className="border p-2">Category</th>
+//             <th className="border p-2">Qty</th>
+//             <th className="border p-2">Rate</th>
+//             <th className="border p-2">Valuation</th>
+//             <th className="border p-2">Actions</th>
+//           </tr>
+//         </thead>
+//         <tbody>
+//           {stockItems.map((row, index) => (
+//             <tr key={index} className="even:bg-gray-50">
+//               {/* S.No */}
+//               <td className="border p-2">{index + 1}</td>
+
+//               {/* Item Input */}
+//               <td className="border p-2">
+//                 <input
+//                   type="text"
+//                   list={`items-${index}`} // unique datalist for each row
+//                   value={row.item}
+//                   onChange={(e) => handleChange(index, "item", e.target.value)}
+//                   className="border p-1 w-full"
+//                   placeholder="Type or select item"
+//                 />
+//                 <datalist id={`items-${index}`}>
+//                   {row.category &&
+//                     itemsByCategory[row.category]?.map((item, i) => (
+//                       <option key={i} value={item} />
+//                     ))}
+//                 </datalist>
+//               </td>
+
+//               {/* Category Input */}
+//               <td className="border p-2">
+//                 <input
+//                   type="text"
+//                   list="category-list"
+//                   value={row.category}
+//                   onChange={(e) =>
+//                     handleChange(index, "category", e.target.value)
+//                   }
+//                   className="border p-1 w-full"
+//                   placeholder="Type or select category"
+//                 />
+//                 <datalist id="category-list">
+//                   {categories?.map((cat, i) => (
+//                     <option key={i} value={cat.name} />
+//                   ))}
+//                 </datalist>
+//               </td>
+
+//               {/* Quantity */}
+//               <td className="border p-2">
+//                 <input
+//                   type="number"
+//                   value={row.qty}
+//                   onChange={(e) => handleChange(index, "qty", e.target.value)}
+//                   className="border p-1 w-full"
+//                 />
+//               </td>
+
+//               {/* Rate */}
+//               <td className="border p-2">
+//                 <input
+//                   type="number"
+//                   value={row.rate}
+//                   onChange={(e) => handleChange(index, "rate", e.target.value)}
+//                   className="border p-1 w-full"
+//                 />
+//               </td>
+
+//               {/* Valuation */}
+//               <td className="border p-2">{row.valuation}</td>
+
+//               {/* Actions */}
+//               <td className="border p-2 flex gap-2">
+//                 <button
+//                   onClick={() => handleDeleteRow(index)}
+//                   className="bg-red-500 text-white px-2 rounded"
+//                 >
+//                   Delete
+//                 </button>
+//               </td>
+//             </tr>
+//           ))}
+//         </tbody>
+//       </table>
+
+//       {/* Add Row Button */}
+//       <button
+//         onClick={handleAddRow}
+//         className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+//       >
+//         Add Row
+//       </button>
+//     </div>
+//   );
+// };
+
+// export default StockTab;
+
+
+
+
+
+
+// ye direct job sheet se aa raha hai.
+import React, { useState, useEffect } from "react";
+import { SaveAllIcon, Trash2 } from "lucide-react";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+
+const StockTab = () => {
+  const [rows, setRows] = useState([]);
+
+  // Load from JobSheet (estimate + extraWork) with robust cost/total logic
+  useEffect(() => {
+    const jobSheetEstimate = JSON.parse(localStorage.getItem("jobSheetEstimate")) || [];
+    const extraWork = JSON.parse(localStorage.getItem("extraWork")) || [];
+
+    const combined = [...jobSheetEstimate, ...extraWork];
+
+    const transformedRows = combined.map((r) => {
+      // normalize numeric inputs
+      const qty = Number.isFinite(parseFloat(r.qty)) ? parseFloat(r.qty) : (Number.isFinite(parseFloat(r.quantity)) ? parseFloat(r.quantity) : 0);
+      const cost = Number.isFinite(parseFloat(r.cost)) ? parseFloat(r.cost) : (Number.isFinite(parseFloat(r.rate)) ? parseFloat(r.rate) : 0);
+      const multiplier =
+        Number.isFinite(parseFloat(r.multiplier)) ? parseFloat(r.multiplier) :
+        Number.isFinite(parseFloat(r.mul)) ? parseFloat(r.mul) :
+        0;
+
+      // priority for total:
+      // 1) if row.total provided and numeric -> use it
+      // 2) else if multiplier present -> cost * multiplier (JobSheet style)
+      // 3) else if qty present -> cost * qty
+      // 4) else fallback to cost
+      let totalValue = 0;
+      if (Number.isFinite(parseFloat(r.total))) {
+        totalValue = parseFloat(r.total);
+      } else if (multiplier > 0) {
+        totalValue = cost * multiplier;
+      } else if (qty > 0) {
+        totalValue = cost * qty;
+      } else {
+        totalValue = cost;
       }
-      return row;
+
+      return {
+        // keep raw numbers so we can format when rendering
+        date: new Date().toISOString().split("T")[0],
+        type: "In",
+        item: r.item || "",
+        linkedTo: r.category || r.linkedTo || "",
+        qty: qty,     // number (0 if not provided)
+        cost: cost,   // number
+        total: totalValue, // number
+        referral: r.jobSheetNo || r.referral || "JobSheet",
+      };
     });
-    setStockItems(updated);
+
+    setRows(transformedRows);
+    localStorage.setItem("stockMovements", JSON.stringify(transformedRows));
+  }, []);
+
+  // Handle manual type change (In/Out)
+  const handleChangeType = (index, value) => {
+    const updated = [...rows];
+    updated[index].type = value;
+    setRows(updated);
+    localStorage.setItem("stockMovements", JSON.stringify(updated));
+  };
+
+  // Delete row -> update state + localStorage
+  const handleDelete = (index) => {
+    if (!window.confirm("Are you sure you want to delete this stock row?")) return;
+    const updated = rows.filter((_, i) => i !== index);
+    setRows(updated);
+    localStorage.setItem("stockMovements", JSON.stringify(updated));
+  };
+
+  // Save manually (optional)
+  const saveToLocalStorage = () => {
+    localStorage.setItem("stockMovements", JSON.stringify(rows));
+    alert("✅ Stock Movements saved.");
   };
 
   return (
-    <div className="p-4 border rounded mt-4">
-      <h2 className="text-xl font-bold mb-4">Stock Tab</h2>
+    <Card className="p-4 mt-2">
+      <h2 className="text-lg font-semibold mb-4">📦 Stock Movements</h2>
 
-      <table className="w-full border-collapse border">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="border p-2">S.No</th>
-            <th className="border p-2">Item</th>
-            <th className="border p-2">Category</th>
-            <th className="border p-2">Qty</th>
-            <th className="border p-2">Rate</th>
-            <th className="border p-2">Valuation</th>
-            <th className="border p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {stockItems.map((row, index) => (
-            <tr key={index} className="even:bg-gray-50">
-              {/* S.No */}
-              <td className="border p-2">{index + 1}</td>
-
-              {/* Item Input */}
-              <td className="border p-2">
-                <input
-                  type="text"
-                  list={`items-${index}`} // unique datalist for each row
-                  value={row.item}
-                  onChange={(e) => handleChange(index, "item", e.target.value)}
-                  className="border p-1 w-full"
-                  placeholder="Type or select item"
-                />
-                <datalist id={`items-${index}`}>
-                  {row.category &&
-                    itemsByCategory[row.category]?.map((item, i) => (
-                      <option key={i} value={item} />
-                    ))}
-                </datalist>
-              </td>
-
-              {/* Category Input */}
-              <td className="border p-2">
-                <input
-                  type="text"
-                  list="category-list"
-                  value={row.category}
-                  onChange={(e) =>
-                    handleChange(index, "category", e.target.value)
-                  }
-                  className="border p-1 w-full"
-                  placeholder="Type or select category"
-                />
-                <datalist id="category-list">
-                  {categories?.map((cat, i) => (
-                    <option key={i} value={cat.name} />
-                  ))}
-                </datalist>
-              </td>
-
-              {/* Quantity */}
-              <td className="border p-2">
-                <input
-                  type="number"
-                  value={row.qty}
-                  onChange={(e) => handleChange(index, "qty", e.target.value)}
-                  className="border p-1 w-full"
-                />
-              </td>
-
-              {/* Rate */}
-              <td className="border p-2">
-                <input
-                  type="number"
-                  value={row.rate}
-                  onChange={(e) => handleChange(index, "rate", e.target.value)}
-                  className="border p-1 w-full"
-                />
-              </td>
-
-              {/* Valuation */}
-              <td className="border p-2">{row.valuation}</td>
-
-              {/* Actions */}
-              <td className="border p-2 flex gap-2">
-                <button
-                  onClick={() => handleDeleteRow(index)}
-                  className="bg-red-500 text-white px-2 rounded"
-                >
-                  Delete
-                </button>
-              </td>
+      <div className="overflow-x-auto">
+        <table className="min-w-full border border-gray-300 text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border p-2">Date</th>
+              <th className="border p-2">Type</th>
+              <th className="border p-2">Item</th>
+              <th className="border p-2">Category</th>
+              <th className="border p-2 text-right">Qty</th>
+              <th className="border p-2 text-right">Cost</th>
+              <th className="border p-2 text-right">Total</th>
+              <th className="border p-2">Referral (JobSheet)</th>
+              <th className="border p-2 text-center">Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan="9" className="text-center p-3 text-gray-500">
+                  No Stock Movement Data Found
+                </td>
+              </tr>
+            ) : (
+              rows.map((row, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="border p-2 text-center">{row.date}</td>
 
-      {/* Add Row Button */}
-      <button
-        onClick={handleAddRow}
-        className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-      >
-        Add Row
-      </button>
-    </div>
+                  <td className="border p-2">
+                    <select
+                      value={row.type}
+                      onChange={(e) => handleChangeType(index, e.target.value)}
+                      className="w-full border rounded px-2 py-1"
+                    >
+                      <option value="In">In</option>
+                      <option value="Out">Out</option>
+                    </select>
+                  </td>
+
+                  <td className="border p-2">{row.item}</td>
+                  <td className="border p-2">{row.linkedTo}</td>
+
+                  <td className="border p-2 text-right">{Number.isFinite(row.qty) ? row.qty : "-"}</td>
+                  <td className="border p-2 text-right">{Number.isFinite(row.cost) ? row.cost.toFixed(2) : "-"}</td>
+                  <td className="border p-2 text-right">{Number.isFinite(row.total) ? row.total.toFixed(2) : "-"}</td>
+                  <td className="border p-2">{row.referral}</td>
+
+                  <td className="border p-2 text-center">
+                    <button
+                      onClick={() => handleDelete(index)}
+                      className="text-red-600 hover:text-red-800"
+                      title="Delete Row"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="flex justify-end mt-4">
+        <Button onClick={saveToLocalStorage} className="bg-green-600 text-white">
+          <SaveAllIcon className="mr-2" /> Save All
+        </Button>
+      </div>
+    </Card>
   );
 };
 
 export default StockTab;
+
+
