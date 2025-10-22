@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useCustomerStore from '@/store/customerStore';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { toast } from 'sonner';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Eye } from 'lucide-react';
 
 const CustomerForm = ({ customer, onSave, onCancel }) => {
     const [formData, setFormData] = useState(
@@ -50,6 +51,7 @@ const CustomerForm = ({ customer, onSave, onCancel }) => {
 }
 
 const ContactsTab = () => {
+    const navigate = useNavigate();
     const { customers, updateCustomer, deleteCustomer } = useCustomerStore();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState(null);
@@ -102,9 +104,24 @@ const ContactsTab = () => {
                     <tbody>
                         {customers.length > 0 ? customers.map(c => (
                             <tr key={c.id} className="border-b dark:border-gray-700 even:bg-gray-50 dark:even:bg-gray-800/50">
-                                <td className="p-2 font-medium dark:text-dark-text">{c.name}</td><td className="p-2">{c.phone}</td>
-                                <td className="p-2">{c.address}</td><td className="p-2">{c.gstin}</td>
+                                <td
+                                    className="p-2 font-medium dark:text-dark-text cursor-pointer hover:text-brand-red transition-colors"
+                                    onClick={() => navigate(`/customer/profile/${c.id}`)}
+                                >
+                                    {c.name}
+                                </td>
+                                <td className="p-2">{c.phone}</td>
+                                <td className="p-2">{c.address}</td>
+                                <td className="p-2">{c.gstin}</td>
                                 <td className="p-2 text-right space-x-1">
+                                    <Button
+                                        variant="ghost"
+                                        className="p-1 h-auto"
+                                        onClick={() => navigate(`/customer/profile/${c.id}`)}
+                                        title="View Profile"
+                                    >
+                                        <Eye className="h-4 w-4 text-green-600"/>
+                                    </Button>
                                     <Button variant="ghost" className="p-1 h-auto" onClick={() => handleEdit(c)}><Edit className="h-4 w-4 text-blue-600"/></Button>
                                      <Button variant="ghost" className="p-1 h-auto" onClick={() => handleDelete(c)}><Trash2 className="h-4 w-4 text-red-500"/></Button>
                                 </td>

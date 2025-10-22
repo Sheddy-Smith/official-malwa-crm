@@ -5,6 +5,7 @@ import Layout from '@/components/Layout';
 import Dashboard from '@/pages/Dashboard';
 import Jobs from '@/pages/Jobs';
 import Customer from '@/pages/Customer';
+import CustomerProfilePage from '@/pages/customer/CustomerProfilePage';
 import Vendors from '@/pages/Vendors';
 import Labour from '@/pages/Labour';
 import Supplier from '@/pages/Supplier';
@@ -33,6 +34,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="jobs" element={<Jobs />} />
           <Route path="customer" element={<Customer />} />
+          <Route path="customer/profile/:customerId" element={<CustomerProfilePage />} />
           <Route path="vendors" element={<Vendors />} />
           <Route path="labour" element={<Labour />} />
           <Route path="supplier" element={<Supplier />} />

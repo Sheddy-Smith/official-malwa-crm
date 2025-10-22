@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import TabbedPage from '@/components/TabbedPage';
 import LeadsTab from './customer/LeadsTab';
 import ContactsTab from './customer/ContactsTab';
@@ -36,12 +36,20 @@ const tabs = [
 
 const Customer = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const { addCustomer } = useCustomerStore();
+    const { addCustomer, fetchCustomers } = useCustomerStore();
 
-    const handleSave = (data) => {
-        addCustomer(data);
-        toast.success("New customer added successfully!");
-        setIsModalOpen(false);
+    useEffect(() => {
+        fetchCustomers();
+    }, []);
+
+    const handleSave = async (data) => {
+        try {
+            await addCustomer(data);
+            toast.success("New customer added successfully!");
+            setIsModalOpen(false);
+        } catch (error) {
+            toast.error("Failed to add customer");
+        }
     };
     const headerActions = (
         <Button onClick={() => setIsModalOpen(true)}><PlusCircle className="h-4 w-4 mr-2" />Add Customer</Button>
