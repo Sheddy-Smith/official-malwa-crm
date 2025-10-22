@@ -1,574 +1,712 @@
-// // Invoice.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Modal from '@/components/ui/Modal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { toast } from 'sonner';
+import { PlusCircle, Edit, Trash2, Download, Printer, Search, FileText } from 'lucide-react';
 
-const INVOICES_KEY = "malwa_invoices_v1";
-const SUPPLIER_LEDGER_KEY = "malwa_supplier_ledger_v1";
+const SellInvoiceForm = ({ invoice, customers, inventoryItems, onSave, onCancel }) => {
+  const [formData, setFormData] = useState(
+    invoice || {
+      invoice_no: '',
+      invoice_date: new Date().toISOString().split('T')[0],
+      customer_id: '',
+      item_id: '',
+      quantity: 0,
+      unit_price: 0,
+      cgst_rate: 0,
+      sgst_rate: 0,
+      igst_rate: 0,
+      payment_status: 'pending',
+      notes: '',
+    }
+  );
 
-const todayISO = () => new Date().toISOString().split("T")[0];
-
-const Badge = ({ children, color = "gray" }) => (
-  <span
-    className={`inline-block px-2 py-0.5 text-xs rounded bg-${color}-100 text-${color}-700`}
-  >
-    {children}
-  </span>
-);
-
-const Invoice = () => {
-  // --- UI State ---
-  const [showForm, setShowForm] = useState(false);
-
-  // --- Data State ---
-  const [invoices, setInvoices] = useState(() => {
-    const raw = localStorage.getItem(INVOICES_KEY);
-    return raw ? JSON.parse(raw) : [];
-  });
-
-  const [ledger, setLedger] = useState(() => {
-    const raw = localStorage.getItem(SUPPLIER_LEDGER_KEY);
-    return raw ? JSON.parse(raw) : [];
-  });
-
-  // --- Form State ---
-  const [supplier, setSupplier] = useState("");
-  const [item, setItem] = useState("");
-  const [qty, setQty] = useState(1);
-  const [rate, setRate] = useState(0);
-  const [gst, setGst] = useState(18);
-  const [date, setDate] = useState(todayISO());
-  const [status, setStatus] = useState("Pending");
-
-  const [editingId, setEditingId] = useState(null);
-
-  // --- Derived total ---
-  const baseTotal = qty * rate;
-  const gstAmount = (baseTotal * gst) / 100;
-  const finalTotal = baseTotal + gstAmount;
-
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem(INVOICES_KEY, JSON.stringify(invoices));
-  }, [invoices]);
-
-  useEffect(() => {
-    localStorage.setItem(SUPPLIER_LEDGER_KEY, JSON.stringify(ledger));
-  }, [ledger]);
-
-  const resetForm = () => {
-    setSupplier("");
-    setItem("");
-    setQty(1);
-    setRate(0);
-    setGst(18);
-    setDate(todayISO());
-    setStatus("Pending");
-    setEditingId(null);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
-  const nextId = () => {
-    if (invoices.length === 0) return 1;
-    return Math.max(...invoices.map((i) => i.id)) + 1;
-  };
-
-  const handleSave = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!supplier.trim()) {
-      alert("Enter supplier name.");
+    if (!formData.customer_id) {
+      toast.error('Customer is required.');
       return;
     }
-    if (!item.trim()) {
-      alert("Enter item name.");
+    if (!formData.item_id) {
+      toast.error('Item is required.');
       return;
     }
-
-    const invoiceObj = {
-      id: editingId || nextId(),
-      supplier: supplier.trim(),
-      item: item.trim(),
-      qty: Number(qty),
-      rate: Number(rate),
-      gst: Number(gst),
-      baseTotal,
-      finalTotal,
-      date,
-      status,
-    };
-
-    if (editingId) {
-      const updated = invoices.map((i) =>
-        i.id === editingId ? invoiceObj : i
-      );
-      setInvoices(updated);
-
-      setLedger((prev) => {
-        const copy = [...prev.filter((l) => l.id !== editingId), invoiceObj];
-        return copy;
-      });
-    } else {
-      setInvoices((prev) => [...prev, invoiceObj]);
-      setLedger((prev) => [...prev, invoiceObj]);
+    if (parseFloat(formData.quantity) <= 0) {
+      toast.error('Quantity must be greater than 0.');
+      return;
     }
-
-    resetForm();
-    setShowForm(false);
+    if (parseFloat(formData.unit_price) <= 0) {
+      toast.error('Unit price must be greater than 0.');
+      return;
+    }
+    onSave(formData);
   };
 
-  const handleEdit = (inv) => {
-    setEditingId(inv.id);
-    setSupplier(inv.supplier);
-    setItem(inv.item);
-    setQty(inv.qty);
-    setRate(inv.rate);
-    setGst(inv.gst);
-    setDate(inv.date);
-    setStatus(inv.status);
-    setShowForm(true);
-  };
-
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete this invoice?")) return;
-    setInvoices((prev) => prev.filter((i) => i.id !== id));
-    setLedger((prev) => prev.filter((l) => l.id !== id));
-  };
+  const selectedItem = inventoryItems.find((item) => item.id === formData.item_id);
+  const subtotal = parseFloat(formData.quantity || 0) * parseFloat(formData.unit_price || 0);
+  const cgstAmount = (subtotal * parseFloat(formData.cgst_rate || 0)) / 100;
+  const sgstAmount = (subtotal * parseFloat(formData.sgst_rate || 0)) / 100;
+  const igstAmount = (subtotal * parseFloat(formData.igst_rate || 0)) / 100;
+  const totalAmount = subtotal + cgstAmount + sgstAmount + igstAmount;
 
   return (
-    <div className="p-6 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Invoices</h2>
-          <p className="text-sm text-gray-600">
-            Manage supplier invoices with GST & payment status.
-          </p>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Invoice No
+          </label>
+          <input
+            type="text"
+            name="invoice_no"
+            value={formData.invoice_no}
+            onChange={handleChange}
+            placeholder="Auto-generated if empty"
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          />
         </div>
 
-        <button
-          onClick={() => {
-            resetForm();
-            setShowForm(true);
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          + New Invoice
-        </button>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Invoice Date *
+          </label>
+          <input
+            type="date"
+            name="invoice_date"
+            value={formData.invoice_date}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            required
+          />
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="border rounded shadow-sm bg-white p-4">
-        {invoices.length === 0 ? (
-          <div className="text-sm text-gray-500">No invoices yet.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-2 border text-sm">ID</th>
-                  <th className="p-2 border text-sm">Supplier</th>
-                  <th className="p-2 border text-sm">Item</th>
-                  <th className="p-2 border text-sm">Qty</th>
-                  <th className="p-2 border text-sm">Rate</th>
-                  <th className="p-2 border text-sm">GST%</th>
-                  <th className="p-2 border text-sm">Total</th>
-                  <th className="p-2 border text-sm">Final (with GST)</th>
-                  <th className="p-2 border text-sm">Date</th>
-                  <th className="p-2 border text-sm">Status</th>
-                  <th className="p-2 border text-sm">Edit</th>
-                  <th className="p-2 border text-sm">Delete</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-gray-50">
-                    <td className="p-2 border text-sm">{inv.id}</td>
-                    <td className="p-2 border text-sm">{inv.supplier}</td>
-                    <td className="p-2 border text-sm">{inv.item}</td>
-                    <td className="p-2 border text-sm">{inv.qty}</td>
-                    <td className="p-2 border text-sm">₹{inv.rate}</td>
-                    <td className="p-2 border text-sm">{inv.gst}%</td>
-                    <td className="p-2 border text-sm">₹{inv.baseTotal}</td>
-                    <td className="p-2 border text-sm font-medium">
-                      ₹{inv.finalTotal}
-                    </td>
-                    <td className="p-2 border text-sm">{inv.date}</td>
-                    <td className="p-2 border text-sm">
-                      <Badge color={inv.status === "Paid" ? "green" : "red"}>
-                        {inv.status}
-                      </Badge>
-                    </td>
-                    <td className="p-2 border text-sm">
-                      <button
-                        onClick={() => handleEdit(inv)}
-                        className="px-2 py-1 text-xs bg-yellow-100 rounded"
-                      >
-                        Edit
-                      </button>
-                    </td>
-                    <td className="p-2 border text-sm">
-                      <button
-                        onClick={() => handleDelete(inv.id)}
-                        className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+          Customer *
+        </label>
+        <select
+          name="customer_id"
+          value={formData.customer_id}
+          onChange={handleChange}
+          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          required
+        >
+          <option value="">Select Customer</option>
+          {customers.map((customer) => (
+            <option key={customer.id} value={customer.id}>
+              {customer.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+          Item *
+        </label>
+        <select
+          name="item_id"
+          value={formData.item_id}
+          onChange={handleChange}
+          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          required
+        >
+          <option value="">Select Item</option>
+          {inventoryItems.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.item_name} ({item.unit})
+            </option>
+          ))}
+        </select>
+        {selectedItem && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Available Stock: {selectedItem.current_stock} {selectedItem.unit}
+          </p>
         )}
       </div>
 
-      {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-40">
-          <div className="bg-white rounded-lg shadow-lg w-[92%] max-w-xl p-5">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">
-                {editingId ? "Edit Invoice" : "New Invoice"}
-              </h3>
-              <button
-                onClick={() => {
-                  setShowForm(false);
-                  resetForm();
-                }}
-                className="px-3 py-1 rounded text-sm bg-gray-100"
-              >
-                Close
-              </button>
-            </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Quantity * {selectedItem && `(${selectedItem.unit})`}
+          </label>
+          <input
+            type="number"
+            name="quantity"
+            value={formData.quantity}
+            onChange={handleChange}
+            step="0.01"
+            min="0.01"
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            required
+          />
+        </div>
 
-            <form onSubmit={handleSave} className="space-y-3">
-              {/* Supplier */}
-              <div>
-                <label className="block text-sm font-medium">Supplier</label>
-                <input
-                  value={supplier}
-                  onChange={(e) => setSupplier(e.target.value)}
-                  className="w-full p-2 border rounded"
-                  placeholder="Enter supplier name"
-                />
-              </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Unit Price * (₹)
+          </label>
+          <input
+            type="number"
+            name="unit_price"
+            value={formData.unit_price}
+            onChange={handleChange}
+            step="0.01"
+            min="0.01"
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            required
+          />
+        </div>
+      </div>
 
-              {/* Item */}
-              <div>
-                <label className="block text-sm font-medium">Item</label>
-                <input
-                  value={item}
-                  onChange={(e) => setItem(e.target.value)}
-                  className="w-full p-2 border rounded"
-                  placeholder="Item details"
-                />
-              </div>
+      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <h4 className="text-sm font-semibold mb-3 text-gray-700 dark:text-dark-text">GST Details</h4>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+              CGST (%)
+            </label>
+            <input
+              type="number"
+              name="cgst_rate"
+              value={formData.cgst_rate}
+              onChange={handleChange}
+              step="0.01"
+              min="0"
+              className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            />
+          </div>
 
-              {/* Qty & Rate */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm font-medium">Quantity</label>
-                  <input
-                    type="number"
-                    value={qty}
-                    onChange={(e) => setQty(e.target.value)}
-                    className="w-full p-2 border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium">Rate</label>
-                  <input
-                    type="number"
-                    value={rate}
-                    onChange={(e) => setRate(e.target.value)}
-                    className="w-full p-2 border rounded"
-                  />
-                </div>
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+              SGST (%)
+            </label>
+            <input
+              type="number"
+              name="sgst_rate"
+              value={formData.sgst_rate}
+              onChange={handleChange}
+              step="0.01"
+              min="0"
+              className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            />
+          </div>
 
-              {/* GST & Date */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm font-medium">GST (%)</label>
-                  <input
-                    type="number"
-                    value={gst}
-                    onChange={(e) => setGst(e.target.value)}
-                    className="w-full p-2 border rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium">Date</label>
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full p-2 border rounded"
-                  />
-                </div>
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className="block text-sm font-medium">Status</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full p-2 border rounded"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="Paid">Paid</option>
-                </select>
-              </div>
-
-              {/* Totals */}
-              <div className="text-sm text-gray-700">
-                <p>Base Total: ₹{baseTotal}</p>
-                <p>GST: ₹{gstAmount}</p>
-                <p className="font-medium">Final Total: ₹{finalTotal}</p>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded"
-                >
-                  {editingId ? "Update Invoice" : "Save Invoice"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    resetForm();
-                  }}
-                  className="px-4 py-2 border rounded"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+              IGST (%)
+            </label>
+            <input
+              type="number"
+              name="igst_rate"
+              value={formData.igst_rate}
+              onChange={handleChange}
+              step="0.01"
+              min="0"
+              className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            />
           </div>
         </div>
-      )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+          Payment Status
+        </label>
+        <select
+          name="payment_status"
+          value={formData.payment_status}
+          onChange={handleChange}
+          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+        >
+          <option value="pending">Pending</option>
+          <option value="partial">Partial</option>
+          <option value="paid">Paid</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+          Notes
+        </label>
+        <textarea
+          name="notes"
+          value={formData.notes}
+          onChange={handleChange}
+          rows="2"
+          placeholder="Additional notes..."
+          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+        />
+      </div>
+
+      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg space-y-2">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-700 dark:text-dark-text-secondary">Subtotal:</span>
+          <span className="font-medium text-gray-900 dark:text-dark-text">₹{subtotal.toFixed(2)}</span>
+        </div>
+        {cgstAmount > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-700 dark:text-dark-text-secondary">CGST ({formData.cgst_rate}%):</span>
+            <span className="font-medium text-gray-900 dark:text-dark-text">₹{cgstAmount.toFixed(2)}</span>
+          </div>
+        )}
+        {sgstAmount > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-700 dark:text-dark-text-secondary">SGST ({formData.sgst_rate}%):</span>
+            <span className="font-medium text-gray-900 dark:text-dark-text">₹{sgstAmount.toFixed(2)}</span>
+          </div>
+        )}
+        {igstAmount > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-700 dark:text-dark-text-secondary">IGST ({formData.igst_rate}%):</span>
+            <span className="font-medium text-gray-900 dark:text-dark-text">₹{igstAmount.toFixed(2)}</span>
+          </div>
+        )}
+        <div className="flex justify-between text-base font-semibold border-t border-gray-300 dark:border-gray-600 pt-2">
+          <span className="text-gray-900 dark:text-dark-text">Total Amount:</span>
+          <span className="text-green-600 dark:text-green-400">₹{totalAmount.toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">{invoice ? 'Update Invoice' : 'Save Invoice'}</Button>
+      </div>
+    </form>
+  );
+};
+
+const Invoice = () => {
+  const [invoices, setInvoices] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  useEffect(() => {
+    fetchCustomers();
+    fetchInventoryItems();
+    fetchInvoices();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, name')
+        .order('name');
+
+      if (error) throw error;
+      setCustomers(data || []);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      toast.error('Failed to load customers');
+    }
+  };
+
+  const fetchInventoryItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('id, item_name, unit, current_stock')
+        .order('item_name');
+
+      if (error) throw error;
+      setInventoryItems(data || []);
+    } catch (error) {
+      console.error('Error fetching inventory items:', error);
+      toast.error('Failed to load inventory items');
+    }
+  };
+
+  const fetchInvoices = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          customer:customers(id, name),
+          item:inventory_items(id, item_name, unit)
+        `)
+        .order('invoice_date', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setInvoices(data || []);
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+      toast.error('Failed to load sales invoices');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveInvoice = async (invoiceData) => {
+    try {
+      const subtotal = parseFloat(invoiceData.quantity) * parseFloat(invoiceData.unit_price);
+      const cgst = (subtotal * parseFloat(invoiceData.cgst_rate || 0)) / 100;
+      const sgst = (subtotal * parseFloat(invoiceData.sgst_rate || 0)) / 100;
+      const igst = (subtotal * parseFloat(invoiceData.igst_rate || 0)) / 100;
+      const total = subtotal + cgst + sgst + igst;
+
+      const invoiceRecord = {
+        ...invoiceData,
+        subtotal,
+        cgst_amount: cgst,
+        sgst_amount: sgst,
+        igst_amount: igst,
+        total_amount: total,
+      };
+
+      if (editingInvoice) {
+        const { error } = await supabase
+          .from('invoices')
+          .update(invoiceRecord)
+          .eq('id', editingInvoice.id);
+
+        if (error) throw error;
+        toast.success('Sales invoice updated successfully!');
+      } else {
+        const { data: newInvoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert([invoiceRecord])
+          .select()
+          .single();
+
+        if (invoiceError) throw invoiceError;
+
+        const { error: ledgerError } = await supabase
+          .from('customer_ledger_entries')
+          .insert([{
+            customer_id: newInvoice.customer_id,
+            entry_type: 'debit',
+            amount: newInvoice.total_amount,
+            entry_date: newInvoice.invoice_date,
+            reference_type: 'invoice',
+            reference_id: newInvoice.id,
+            reference_no: newInvoice.invoice_no || `INV-${newInvoice.id}`,
+            notes: `Sales invoice - ${inventoryItems.find(i => i.id === newInvoice.item_id)?.item_name || 'item'}`,
+          }]);
+
+        if (ledgerError) throw ledgerError;
+
+        const totalGst = cgst + sgst + igst;
+        if (totalGst > 0) {
+          const { error: gstError } = await supabase
+            .from('gst_ledger')
+            .insert([{
+              transaction_date: newInvoice.invoice_date,
+              transaction_type: 'sale',
+              document_no: newInvoice.invoice_no || `INV-${newInvoice.id}`,
+              party_name: customers.find(c => c.id === newInvoice.customer_id)?.name || '',
+              taxable_amount: subtotal,
+              cgst_amount: cgst,
+              sgst_amount: sgst,
+              igst_amount: igst,
+              total_gst: totalGst,
+              entry_type: 'output_tax',
+              reference_type: 'invoice',
+              reference_id: newInvoice.id,
+            }]);
+
+          if (gstError) throw gstError;
+        }
+
+        toast.success('Sales invoice created successfully with customer ledger & GST entries!');
+      }
+
+      setIsModalOpen(false);
+      setEditingInvoice(null);
+      fetchInvoices();
+    } catch (error) {
+      console.error('Error saving invoice:', error);
+      toast.error('Failed to save sales invoice');
+    }
+  };
+
+  const handleDeleteInvoice = async () => {
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invoiceToDelete.id);
+
+      if (error) throw error;
+
+      toast.success('Sales invoice deleted successfully.');
+      setIsDeleteModalOpen(false);
+      setInvoiceToDelete(null);
+      fetchInvoices();
+    } catch (error) {
+      console.error('Error deleting invoice:', error);
+      toast.error('Failed to delete invoice. It may be referenced in other records.');
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Invoice No', 'Date', 'Customer', 'Item', 'Quantity', 'Unit Price', 'Subtotal', 'CGST', 'SGST', 'IGST', 'Total', 'Status'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredInvoices.map((inv) =>
+        [
+          inv.invoice_no || `INV-${inv.id}`,
+          inv.invoice_date,
+          inv.customer?.name || '',
+          inv.item?.item_name || '',
+          inv.quantity,
+          inv.unit_price,
+          inv.subtotal,
+          inv.cgst_amount,
+          inv.sgst_amount,
+          inv.igst_amount,
+          inv.total_amount,
+          inv.payment_status,
+        ].join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sales_invoices_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    toast.success('Sales invoices exported to CSV');
+  };
+
+  const handlePrint = () => {
+    window.print();
+    toast.success('Print dialog opened');
+  };
+
+  const filteredInvoices = invoices.filter((inv) => {
+    const matchesSearch =
+      inv.invoice_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inv.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inv.item?.item_name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = !statusFilter || inv.payment_status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  if (loading) {
+    return (
+      <Card>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-red"></div>
+          <span className="ml-3 text-gray-600 dark:text-dark-text-secondary">Loading sales invoices...</span>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingInvoice(null);
+        }}
+        title={editingInvoice ? 'Edit Sales Invoice' : 'New Sales Invoice'}
+      >
+        <SellInvoiceForm
+          invoice={editingInvoice}
+          customers={customers}
+          inventoryItems={inventoryItems}
+          onSave={handleSaveInvoice}
+          onCancel={() => {
+            setIsModalOpen(false);
+            setEditingInvoice(null);
+          }}
+        />
+      </Modal>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteInvoice}
+        title="Delete Sales Invoice"
+        message={`Are you sure you want to delete invoice "${invoiceToDelete?.invoice_no || `INV-${invoiceToDelete?.id}`}"? This will also remove related customer ledger and GST entries.`}
+      />
+
+      <Card>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-dark-text">Sales Invoices</h3>
+          <Button
+            onClick={() => {
+              if (customers.length === 0) {
+                toast.error('Please add customers first in the Customer module');
+                return;
+              }
+              if (inventoryItems.length === 0) {
+                toast.error('Please add inventory items first');
+                return;
+              }
+              setIsModalOpen(true);
+            }}
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add Sales Invoice
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="relative md:col-span-2">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by invoice no, customer, or item..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            />
+          </div>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          >
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="partial">Partial</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+
+        <div className="flex items-center justify-end space-x-2 mb-4">
+          <Button variant="secondary" onClick={exportToCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
+          <Button variant="secondary" onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-2" />
+            Print
+          </Button>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-700 text-left">
+              <tr>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Invoice No</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Date</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Customer</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Item</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Qty</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Total</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Status</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredInvoices.length > 0 ? (
+                filteredInvoices.map((invoice) => (
+                  <tr
+                    key={invoice.id}
+                    className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <td className="p-3 font-medium text-gray-900 dark:text-dark-text">
+                      {invoice.invoice_no || `INV-${invoice.id}`}
+                    </td>
+                    <td className="p-3 text-gray-700 dark:text-dark-text-secondary">
+                      {new Date(invoice.invoice_date).toLocaleDateString('en-IN')}
+                    </td>
+                    <td className="p-3 text-gray-700 dark:text-dark-text-secondary">
+                      {invoice.customer?.name || '-'}
+                    </td>
+                    <td className="p-3 text-gray-700 dark:text-dark-text-secondary">
+                      {invoice.item?.item_name || '-'}
+                    </td>
+                    <td className="p-3 text-right text-gray-700 dark:text-dark-text-secondary">
+                      {parseFloat(invoice.quantity).toFixed(2)} {invoice.item?.unit}
+                    </td>
+                    <td className="p-3 text-right font-medium text-green-600 dark:text-green-400">
+                      ₹{parseFloat(invoice.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="p-3">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          invoice.payment_status === 'paid'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                            : invoice.payment_status === 'partial'
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}
+                      >
+                        {invoice.payment_status?.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <div className="flex justify-end items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          className="p-2 h-auto"
+                          onClick={() => {
+                            setEditingInvoice(invoice);
+                            setIsModalOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="p-2 h-auto"
+                          onClick={() => {
+                            setInvoiceToDelete(invoice);
+                            setIsDeleteModalOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" className="text-center p-12">
+                    <div className="flex flex-col items-center text-gray-500 dark:text-dark-text-secondary">
+                      <FileText className="h-12 w-12 mb-3 text-gray-400" />
+                      <p className="text-lg font-medium">No sales invoices found</p>
+                      <p className="text-sm mt-1">
+                        {searchTerm || statusFilter
+                          ? 'Try adjusting your filters'
+                          : 'Add your first sales invoice to get started'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {filteredInvoices.length > 0 && (
+          <div className="mt-4 text-sm text-gray-600 dark:text-dark-text-secondary">
+            Showing {filteredInvoices.length} of {invoices.length} invoice(s)
+          </div>
+        )}
+      </Card>
     </div>
   );
 };
 
 export default Invoice;
-
-
-  //  Runnimg code 1
-// import React, { useState, useEffect } from "react";
-
-// const Invoice = () => {
-//   const [supplier, setSupplier] = useState("");
-//   const [item, setItem] = useState("");
-//   const [qty, setQty] = useState("");
-//   const [rate, setRate] = useState("");
-//   const [gst, setGst] = useState("");
-//   const [date, setDate] = useState("");
-//   const [status, setStatus] = useState("Unpaid");
-
-//   const [invoices, setInvoices] = useState([]);
-//   const [editingId, setEditingId] = useState(null);
-
-//   // Load from localStorage
-//   useEffect(() => {
-//     const stored = localStorage.getItem("invoices");
-//     if (stored) setInvoices(JSON.parse(stored));
-//   }, []);
-
-//   // Save to localStorage
-//   useEffect(() => {
-//     localStorage.setItem("invoices", JSON.stringify(invoices));
-//   }, [invoices]);
-
-//   // Helper for ID
-//   const nextId = () =>
-//     invoices.length > 0 ? Math.max(...invoices.map((i) => i.id)) + 1 : 1;
-
-//   // Add or Update Invoice
-//   const handleAddOrUpdate = () => {
-//     if (!supplier || !item || !qty || !rate || !gst || !date) {
-//       alert("Please fill all fields");
-//       return;
-//     }
-
-//     const baseTotal = Number(qty) * Number(rate);
-//     const gstAmount = (baseTotal * Number(gst)) / 100;
-//     const finalTotal = baseTotal + gstAmount;
-
-//     const invoiceObj = {
-//       id: editingId || nextId(),
-//       supplier: supplier.trim(),
-//       item: item.trim(),
-//       qty: Number(qty),
-//       rate: Number(rate),
-//       price: Number(rate), // 👈 alias for GST Ledger
-//       gst: Number(gst),
-//       gstAmount, // 👈 explicit GST amount
-//       baseTotal,
-//       finalTotal,
-//       totalAmount: finalTotal, // 👈 alias for GST Ledger
-//       date,
-//       status,
-//       paymentStatus: status, // 👈 alias for GST Ledger
-//     };
-
-//     if (editingId) {
-//       setInvoices(
-//         invoices.map((inv) => (inv.id === editingId ? invoiceObj : inv))
-//       );
-//       setEditingId(null);
-//     } else {
-//       setInvoices([...invoices, invoiceObj]);
-//     }
-
-//     // Reset fields
-//     setSupplier("");
-//     setItem("");
-//     setQty("");
-//     setRate("");
-//     setGst("");
-//     setDate("");
-//     setStatus("Unpaid");
-//   };
-
-//   const handleEdit = (id) => {
-//     const inv = invoices.find((i) => i.id === id);
-//     if (!inv) return;
-
-//     setSupplier(inv.supplier);
-//     setItem(inv.item);
-//     setQty(inv.qty);
-//     setRate(inv.rate);
-//     setGst(inv.gst);
-//     setDate(inv.date);
-//     setStatus(inv.status);
-//     setEditingId(id);
-//   };
-
-//   const handleDelete = (id) => {
-//     setInvoices(invoices.filter((i) => i.id !== id));
-//   };
-
-//   return (
-//     <div className="p-6 bg-gray-50 min-h-screen">
-//       <h2 className="text-2xl font-bold mb-4 text-center">Invoice Manager</h2>
-
-//       {/* Input Form */}
-//       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-//         <input
-//           type="text"
-//           placeholder="Supplier"
-//           className="border p-2 rounded"
-//           value={supplier}
-//           onChange={(e) => setSupplier(e.target.value)}
-//         />
-//         <input
-//           type="text"
-//           placeholder="Item"
-//           className="border p-2 rounded"
-//           value={item}
-//           onChange={(e) => setItem(e.target.value)}
-//         />
-//         <input
-//           type="number"
-//           placeholder="Qty"
-//           className="border p-2 rounded"
-//           value={qty}
-//           onChange={(e) => setQty(e.target.value)}
-//         />
-//         <input
-//           type="number"
-//           placeholder="Rate"
-//           className="border p-2 rounded"
-//           value={rate}
-//           onChange={(e) => setRate(e.target.value)}
-//         />
-//         <input
-//           type="number"
-//           placeholder="GST %"
-//           className="border p-2 rounded"
-//           value={gst}
-//           onChange={(e) => setGst(e.target.value)}
-//         />
-//         <input
-//           type="date"
-//           className="border p-2 rounded"
-//           value={date}
-//           onChange={(e) => setDate(e.target.value)}
-//         />
-//         <select
-//           className="border p-2 rounded"
-//           value={status}
-//           onChange={(e) => setStatus(e.target.value)}
-//         >
-//           <option value="Unpaid">Unpaid</option>
-//           <option value="Paid">Paid</option>
-//         </select>
-//       </div>
-
-//       <button
-//         className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-700"
-//         onClick={handleAddOrUpdate}
-//       >
-//         {editingId ? "Update Invoice" : "Add Invoice"}
-//       </button>
-
-//       {/* Invoice Table */}
-//       <div className="mt-8">
-//         <table className="w-full border-collapse border">
-//           <thead>
-//             <tr className="bg-gray-200 text-left">
-//               <th className="border p-2">ID</th>
-//               <th className="border p-2">Supplier</th>
-//               <th className="border p-2">Item</th>
-//               <th className="border p-2">Qty</th>
-//               <th className="border p-2">Price</th>
-//               <th className="border p-2">GST%</th>
-//               <th className="border p-2">GST Amt</th>
-//               <th className="border p-2">Total</th>
-//               <th className="border p-2">Date</th>
-//               <th className="border p-2">Payment</th>
-//               <th className="border p-2">Actions</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {invoices.map((inv) => (
-//               <tr key={inv.id} className="hover:bg-gray-100">
-//                 <td className="border p-2">{inv.id}</td>
-//                 <td className="border p-2">{inv.supplier}</td>
-//                 <td className="border p-2">{inv.item}</td>
-//                 <td className="border p-2">{inv.qty}</td>
-//                 <td className="border p-2">{inv.price}</td>
-//                 <td className="border p-2">{inv.gst}%</td>
-//                 <td className="border p-2">{inv.gstAmount}</td>
-//                 <td className="border p-2">{inv.totalAmount}</td>
-//                 <td className="border p-2">{inv.date}</td>
-//                 <td className="border p-2">{inv.paymentStatus}</td>
-//                 <td className="border p-2 space-x-2">
-//                   <button
-//                     className="bg-yellow-400 px-3 py-1 rounded"
-//                     onClick={() => handleEdit(inv.id)}
-//                   >
-//                     Edit
-//                   </button>
-//                   <button
-//                     className="bg-red-500 text-white px-3 py-1 rounded"
-//                     onClick={() => handleDelete(inv.id)}
-//                   >
-//                     Delete
-//                   </button>
-//                 </td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Invoice;
-
-
-
