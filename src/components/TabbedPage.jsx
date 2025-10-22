@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
-const TabbedPage = ({ tabs, title, headerActions, contentBeforeTabs }) => {
+const TabbedPage = ({ tabs, title, headerActions }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(tabs[0].id);
 
@@ -25,16 +25,6 @@ const TabbedPage = ({ tabs, title, headerActions, contentBeforeTabs }) => {
                 <h1 className="text-2xl font-bold text-brand-dark dark:text-dark-text mb-2 sm:mb-0">{title}</h1>
                 <div className="flex items-center space-x-2">{headerActions}</div>
             </div>
-        )}
-        {contentBeforeTabs && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="bg-white dark:bg-dark-card p-6 sm:p-8 rounded-xl shadow-card dark:shadow-dark-card border border-gray-100 dark:border-gray-700"
-          >
-            {contentBeforeTabs}
-          </motion.div>
         )}
         <motion.div
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
