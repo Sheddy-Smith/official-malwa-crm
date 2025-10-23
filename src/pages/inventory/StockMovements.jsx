@@ -1,470 +1,980 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
-import Modal from '@/components/ui/Modal';
-import { toast } from 'sonner';
-import { Download, FileText, Printer, Search, ExternalLink } from 'lucide-react';
-import jsPDF from 'jspdf';
+// import Card from '@/components/ui/Card';
+// import Button from '@/components/ui/Button';
+// import { PlusCircle } from 'lucide-react';
 
-const DocumentDetailsModal = ({ documentId, documentType, onClose }) => {
-  const [documentData, setDocumentData] = useState(null);
-  const [loading, setLoading] = useState(true);
+// const StockMovements = () => {
+//   return (
+//      <Card>
+//         <div className="flex justify-between items-center mb-4">
+//             <h3 className="text-lg font-bold dark:text-dark-text">Stock Movements</h3>
+//             <Button variant="secondary"><PlusCircle className="h-4 w-4 mr-2" />Add Movenment</Button>
+//         </div>
+//         <p className="dark:text-dark-text-secondary text-sm">This table will show a ledger of all stock movements (IN/OUT) linked to jobs or purchases.</p>
+//     </Card>
+//   )
+// }
 
-  useEffect(() => {
-    fetchDocumentDetails();
-  }, [documentId, documentType]);
+// export default StockMovements
 
-  const fetchDocumentDetails = async () => {
-    if (!documentId || !documentType) return;
 
-    setLoading(true);
-    try {
-      let tableName = '';
-      if (documentType === 'purchase') tableName = 'purchases';
-      else if (documentType === 'purchase_challan') tableName = 'purchase_challans';
-      else if (documentType === 'job') tableName = 'jobs';
+// final code
+// import React, { useState } from "react";
+// import Button from "@/components/ui/Button"; // ✅ Tumhara Button component
+// import { PlusCircle, Edit, Trash2, Save, X } from "lucide-react"; // ✅ Icons
 
-      if (!tableName) {
-        toast.error('Invalid document type');
-        return;
-      }
+// const StockMovements = () => {
+//   // 🔹 Ledger data
+//   const [ledger, setLedger] = useState([]);
 
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('*')
-        .eq('id', documentId)
-        .maybeSingle();
+//   // 🔹 Input states
+//   const [item, setItem] = useState("");
+//   const [type, setType] = useState("IN");
+//   const [qty, setQty] = useState("");
+//   const [linkedTo, setLinkedTo] = useState("");
 
-      if (error) throw error;
-      setDocumentData(data);
-    } catch (error) {
-      console.error('Error fetching document:', error);
-      toast.error('Failed to load document details');
-    } finally {
-      setLoading(false);
-    }
-  };
+//   // 🔹 Edit mode states
+//   const [editId, setEditId] = useState(null);
+//   const [editItem, setEditItem] = useState("");
+//   const [editType, setEditType] = useState("IN");
+//   const [editQty, setEditQty] = useState("");
+//   const [editLinkedTo, setEditLinkedTo] = useState("");
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-red"></div>
-        <span className="ml-3">Loading document...</span>
-      </div>
-    );
-  }
+//   // ➕ Add entry
+//   const handleAddEntry = () => {
+//     if (!item || !qty || !linkedTo) return;
 
-  if (!documentData) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        Document not found or has been deleted.
-      </div>
-    );
-  }
+//     const newEntry = {
+//       id: Date.now(),
+//       item,
+//       type,
+//       qty,
+//       linkedTo,
+//       date: new Date().toLocaleString(),
+//     };
 
-  return (
-    <div className="space-y-4">
-      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-        <h3 className="font-semibold text-lg mb-2">
-          {documentType === 'purchase' && 'Purchase Invoice'}
-          {documentType === 'purchase_challan' && 'Purchase Challan'}
-          {documentType === 'job' && 'Job Sheet'}
-        </h3>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <span className="text-gray-600 dark:text-dark-text-secondary">Document No:</span>
-            <span className="ml-2 font-medium">
-              {documentData.invoice_no || documentData.challan_no || documentData.job_no}
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-600 dark:text-dark-text-secondary">Date:</span>
-            <span className="ml-2 font-medium">
-              {new Date(
-                documentData.invoice_date || documentData.challan_date || documentData.created_at
-              ).toLocaleDateString('en-IN')}
-            </span>
-          </div>
-          {documentData.total_amount !== undefined && (
-            <div>
-              <span className="text-gray-600 dark:text-dark-text-secondary">Amount:</span>
-              <span className="ml-2 font-medium text-green-600">
-                ₹{parseFloat(documentData.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+//     setLedger([...ledger, newEntry]);
 
-      {documentData.notes && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-            Notes
-          </label>
-          <p className="text-sm text-gray-600 dark:text-dark-text-secondary bg-gray-50 dark:bg-gray-800 p-3 rounded">
-            {documentData.notes}
-          </p>
-        </div>
-      )}
+//     // Inputs reset
+//     setItem("");
+//     setQty("");
+//     setLinkedTo("");
+//   };
 
-      <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
-        <Button onClick={onClose}>Close</Button>
-      </div>
-    </div>
-  );
-};
+//   // 📝 Start Edit
+//   const handleEdit = (entry) => {
+//     setEditId(entry.id);
+//     setEditItem(entry.item);
+//     setEditType(entry.type);
+//     setEditQty(entry.qty);
+//     setEditLinkedTo(entry.linkedTo);
+//   };
+
+//   // 💾 Save Edit
+//   const handleSave = () => {
+//     const updated = ledger.map((entry) =>
+//       entry.id === editId
+//         ? {
+//             ...entry,
+//             item: editItem,
+//             type: editType,
+//             qty: editQty,
+//             linkedTo: editLinkedTo,
+//           }
+//         : entry
+//     );
+//     setLedger(updated);
+//     setEditId(null); // Edit mode off
+//   };
+
+//   // ❌ Delete entry
+//   const handleDelete = (id) => {
+//     const updated = ledger.filter((entry) => entry.id !== id);
+//     setLedger(updated);
+//   };
+
+//   return (
+//     <div className="p-6">
+//       {/* Heading */}
+//       <h2 className="text-xl font-bold mb-4">📒 Stock Ledger</h2>
+
+//       {/* Form Inputs */}
+//       <div className="flex gap-2 mb-4">
+//         <input
+//           type="text"
+//           placeholder="Item Name"
+//           value={item}
+//           onChange={(e) => setItem(e.target.value)}
+//           className="border p-2 flex-1"
+//         />
+
+//         <select
+//           value={type}
+//           onChange={(e) => setType(e.target.value)}
+//           className="border p-2"
+//         >
+//           <option value="IN">IN</option>
+//           <option value="OUT">OUT</option>
+//         </select>
+
+//         <input
+//           type="number"
+//           placeholder="Quantity"
+//           value={qty}
+//           onChange={(e) => setQty(e.target.value)}
+//           className="border p-2 w-24"
+//         />
+
+//         <input
+//           type="text"
+//           placeholder="Linked To (Job/Purchase)"
+//           value={linkedTo}
+//           onChange={(e) => setLinkedTo(e.target.value)}
+//           className="border p-2 flex-1"
+//         />
+
+//         <Button onClick={handleAddEntry} className="bg-blue-500 text-white">
+//           <PlusCircle className="h-4 w-4 mr-2" /> Add
+//         </Button>
+//       </div>
+
+//       {/* Ledger Table */}
+//       <table className="w-full border-collapse border">
+//         <thead>
+//           <tr className="bg-gray-200">
+//             <th className="border p-2">S.No</th>
+//             <th className="border p-2">Item</th>
+//             <th className="border p-2">Type</th>
+//             <th className="border p-2">Qty</th>
+//             <th className="border p-2">Linked To</th>
+//             <th className="border p-2">Date</th>
+//             <th className="border p-2">Actions</th>
+//           </tr>
+//         </thead>
+//         <tbody>
+//           {ledger.map((entry, index) => (
+//             <tr key={entry.id}>
+//               <td className="border p-2">{index + 1}</td>
+//               <td className="border p-2">
+//                 {editId === entry.id ? (
+//                   <input
+//                     type="text"
+//                     value={editItem}
+//                     onChange={(e) => setEditItem(e.target.value)}
+//                     className="border p-1"
+//                   />
+//                 ) : (
+//                   entry.item
+//                 )}
+//               </td>
+//               <td className="border p-2">
+//                 {editId === entry.id ? (
+//                   <select
+//                     value={editType}
+//                     onChange={(e) => setEditType(e.target.value)}
+//                     className="border p-1"
+//                   >
+//                     <option value="IN">IN</option>
+//                     <option value="OUT">OUT</option>
+//                   </select>
+//                 ) : (
+//                   <span
+//                     className={`font-bold ${
+//                       entry.type === "IN" ? "text-green-600" : "text-red-600"
+//                     }`}
+//                   >
+//                     {entry.type}
+//                   </span>
+//                 )}
+//               </td>
+//               <td className="border p-2">
+//                 {editId === entry.id ? (
+//                   <input
+//                     type="number"
+//                     value={editQty}
+//                     onChange={(e) => setEditQty(e.target.value)}
+//                     className="border p-1 w-20"
+//                   />
+//                 ) : (
+//                   entry.qty
+//                 )}
+//               </td>
+//               <td className="border p-2">
+//                 {editId === entry.id ? (
+//                   <input
+//                     type="text"
+//                     value={editLinkedTo}
+//                     onChange={(e) => setEditLinkedTo(e.target.value)}
+//                     className="border p-1"
+//                   />
+//                 ) : (
+//                   entry.linkedTo
+//                 )}
+//               </td>
+//               <td className="border p-2">{entry.date}</td>
+//               <td className="border p-2 flex gap-2">
+//                 {editId === entry.id ? (
+//                   <>
+//                     <Button
+//                       onClick={handleSave}
+//                       className="bg-green-500 text-white"
+//                     >
+//                       <Save className="h-4 w-4 mr-1" /> 
+//                       {/* Save */}
+//                     </Button>
+//                     <Button
+//                       onClick={() => setEditId(null)}
+//                       className="bg-gray-400 text-white"
+//                     >
+//                       <X className="h-4 w-4 mr-1" /> 
+//                       {/* Cancel */}
+//                     </Button>
+//                   </>
+//                 ) : (
+//                   <>
+//                     <Button
+//                       onClick={() => handleEdit(entry)}
+//                       className="bg-yellow-500 text-white"
+//                     >
+//                       <Edit className="h-4 w-4 mr-1" /> Edit
+//                     </Button>
+//                     <Button
+//                       onClick={() => handleDelete(entry.id)}
+//                       className="bg-red-500 text-white"
+//                     >
+//                       <Trash2 className="h-4 w-4 mr-1" /> Delete
+//                     </Button>
+//                   </>
+//                 )}
+//               </td>
+//             </tr>
+//           ))}
+//         </tbody>
+//       </table>
+//     </div>
+//   );
+// };
+
+// export default StockMovements;
+
+
+
+
+
+// 1 Code check
+// import React, { useState, useEffect } from "react";
+// import { SaveAllIcon, Trash2 } from "lucide-react";
+// import Card from "@/components/ui/Card";
+// // import { Button } from "@/components/ui/button";
+// import Button  from "@/components/ui/Button"
+
+// const StockMovements = () => {
+//   const [rows, setRows] = useState([]);
+//   const [categories, setCategories] = useState([]);
+//   const [items, setItems] = useState([]);
+
+//   // ✅ Load from localStorage (Job Sheet)
+//   useEffect(() => {
+//     const jobSheetEstimate = JSON.parse(localStorage.getItem("jobSheetEstimate")) || [];
+//     const extraWork = JSON.parse(localStorage.getItem("extraWork")) || [];
+
+//     // combine and extract unique categories & items
+//     const combined = [...jobSheetEstimate, ...extraWork];
+
+//     const uniqueCategories = [...new Set(combined.map((row) => row.category || ""))].filter(Boolean);
+//     const uniqueItems = [...new Set(combined.map((row) => row.item || ""))].filter(Boolean);
+
+//     setCategories(uniqueCategories);
+//     setItems(uniqueItems);
+
+//     // Load stock movement data (if saved before)
+//     const savedRows = JSON.parse(localStorage.getItem("stockMovements")) || [];
+//     setRows(savedRows);
+//   }, []);
+
+//   // ✅ Save rows to localStorage
+//   const saveToLocalStorage = (updatedRows) => {
+//     localStorage.setItem("stockMovements", JSON.stringify(updatedRows));
+//   };
+
+//   // ✅ Add Row
+//   const handleAddRow = () => {
+//     const newRow = {
+//       date: "",
+//       item: "",
+//       qty: "",
+//       linkedTo: "",
+//       remarks: "",
+//     };
+//     const updatedRows = [...rows, newRow];
+//     setRows(updatedRows);
+//     saveToLocalStorage(updatedRows);
+//   };
+
+//   // ✅ Delete Row
+//   const handleDeleteRow = (index) => {
+//     const updatedRows = rows.filter((_, i) => i !== index);
+//     setRows(updatedRows);
+//     saveToLocalStorage(updatedRows);
+//   };
+
+//   // ✅ Update Row
+//   const handleChange = (index, field, value) => {
+//     const updatedRows = [...rows];
+//     updatedRows[index][field] = value;
+//     setRows(updatedRows);
+//     saveToLocalStorage(updatedRows);
+//   };
+
+//   return (
+//     <Card className="p-4 mt-2">
+//       <h2 className="text-lg font-semibold mb-4">📦 Stock Movements</h2>
+
+//       <div className="overflow-x-auto">
+//         <table className="min-w-full border border-gray-300 text-sm">
+//           <thead className="bg-gray-100">
+//             <tr>
+//               <th className="border p-2">Date</th>
+//               <th className="border p-2">Item</th>
+//               {/* <th className="border p-2">Qty</th> */}
+//               <th className="border p-2">Linked To (Category)</th>
+//               {/* <th className="border p-2">Remarks</th> */}
+//               <th className="border p-2 w-[100px]">Actions</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {rows.map((row, index) => (
+//               <tr key={index} className="hover:bg-gray-50">
+//                 <td className="border p-2">
+//                   <input
+//                     type="date"
+//                     value={row.date}
+//                     onChange={(e) => handleChange(index, "date", e.target.value)}
+//                     className="w-full border rounded px-2 py-1"
+//                   />
+//                 </td>
+//                 <td className="border p-2">
+//                   <input
+//                     list="itemsList"
+//                     value={row.item}
+//                     onChange={(e) => handleChange(index, "item", e.target.value)}
+//                     className="w-full border rounded px-2 py-1"
+//                     placeholder="Select Item"
+//                   />
+//                   <datalist id="itemsList">
+//                     {items.map((it, i) => (
+//                       <option key={i} value={it} />
+//                     ))}
+//                   </datalist>
+//                 </td>
+                
+//                 <td className="border p-2">
+//                   <input
+//                     list="categoriesList"
+//                     value={row.linkedTo}
+//                     onChange={(e) => handleChange(index, "linkedTo", e.target.value)}
+//                     className="w-full border rounded px-2 py-1"
+//                     placeholder="Select Category"
+//                   />
+//                   <datalist id="categoriesList">
+//                     {categories.map((cat, i) => (
+//                       <option key={i} value={cat} />
+//                     ))}
+//                   </datalist>
+//                 </td>
+              
+//                 <td className="border p-2 text-center">
+//                   <Button
+//                     variant="destructive"
+//                     size="sm"
+//                     onClick={() => handleDeleteRow(index)}
+//                   >
+
+//                     <Trash2 className="text-red-900"/>
+
+
+//                   </Button>
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+
+//       <div className="flex justify-between mt-4">
+//         <Button onClick={handleAddRow} className="bg-blue-600 text-white">
+//           + Add Row
+//         </Button>
+//         <Button
+//           onClick={() => saveToLocalStorage(rows)}
+//           className="text-white"
+//         ><SaveAllIcon/>
+//         </Button>
+//       </div>
+//     </Card>
+//   );
+// };
+
+// export default StockMovements;
+
+
+
+
+// import React, { useState, useEffect } from "react";
+// import { SaveAllIcon, Trash2 } from "lucide-react";
+// import Card from "@/components/ui/Card";
+// import Button from "@/components/ui/Button";
+
+// const StockMovements = () => {
+//   const [rows, setRows] = useState([]);
+
+//   // ✅ Load from JobSheet (estimate + extraWork)
+//   useEffect(() => {
+//     const jobSheetEstimate = JSON.parse(localStorage.getItem("jobSheetEstimate")) || [];
+//     const extraWork = JSON.parse(localStorage.getItem("extraWork")) || [];
+
+//     const combined = [...jobSheetEstimate, ...extraWork];
+
+//     // ✅ Transform JobSheet data into StockMovements format
+//     const transformedRows = combined.map((r) => ({
+//       date: new Date().toISOString().split("T")[0],
+//       type: "In",
+//       item: r.item || "",
+//       linkedTo: r.category || "",
+//       qty: r.qty || r.quantity || "",
+//       cost: r.rate || r.cost || "",
+//       total: (r.qty || r.quantity || 0) * (r.rate || r.cost || 0),
+//       referral: r.jobSheetNo || "JobSheet",
+//     }));
+
+//     setRows(transformedRows);
+//     localStorage.setItem("stockMovements", JSON.stringify(transformedRows));
+//   }, []);
+
+//   // ✅ Handle type change
+//   const handleChangeType = (index, value) => {
+//     const updated = [...rows];
+//     updated[index].type = value;
+//     setRows(updated);
+//     localStorage.setItem("stockMovements", JSON.stringify(updated));
+//   };
+
+//   // ✅ Handle delete row
+//   const handleDelete = (index) => {
+//     const updated = rows.filter((_, i) => i !== index);
+//     setRows(updated);
+//     localStorage.setItem("stockMovements", JSON.stringify(updated));
+//   };
+
+//   // ✅ Save manually (optional)
+//   const saveToLocalStorage = () => {
+//     localStorage.setItem("stockMovements", JSON.stringify(rows));
+//   };
+
+//   return (
+//     <Card className="p-4 mt-2">
+//       <h2 className="text-lg font-semibold mb-4">📦 Stock Movements</h2>
+
+//       <div className="overflow-x-auto">
+//         <table className="min-w-full border border-gray-300 text-sm">
+//           <thead className="bg-gray-100">
+//             <tr>
+//               <th className="border p-2">Date</th>
+//               <th className="border p-2">Type</th>
+//               <th className="border p-2">Item</th>
+//               <th className="border p-2">Category</th>
+//               <th className="border p-2 text-right">Qty</th>
+//               <th className="border p-2 text-right">Cost</th>
+//               <th className="border p-2 text-right">Total</th>
+//               <th className="border p-2">Referral (JobSheet)</th>
+//               <th className="border p-2 text-center">Action</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {rows.length === 0 ? (
+//               <tr>
+//                 <td colSpan="9" className="text-center p-3 text-gray-500">
+//                   No Stock Movement Data Found
+//                 </td>
+//               </tr>
+//             ) : (
+//               rows.map((row, index) => (
+//                 <tr key={index} className="hover:bg-gray-50">
+//                   <td className="border p-2 text-center">{row.date}</td>
+
+//                   <td className="border p-2">
+//                     <select
+//                       value={row.type}
+//                       onChange={(e) => handleChangeType(index, e.target.value)}
+//                       className="w-full border rounded px-2 py-1"
+//                     >
+//                       <option value="In">In</option>
+//                       <option value="Out">Out</option>
+//                     </select>
+//                   </td>
+
+//                   <td className="border p-2">{row.item}</td>
+//                   <td className="border p-2">{row.linkedTo}</td>
+//                   <td className="border p-2 text-right">{row.qty}</td>
+//                   <td className="border p-2 text-right">{row.cost}</td>
+//                   <td className="border p-2 text-right">{row.total?.toFixed(2)}</td>
+//                   <td className="border p-2">{row.referral}</td>
+
+//                   {/* ✅ Delete Button */}
+//                   <td className="border p-2 text-center">
+//                     <button
+//                       onClick={() => handleDelete(index)}
+//                       className="text-red-600 hover:text-red-800"
+//                       title="Delete Row"
+//                     >
+//                       <Trash2 size={18} />
+//                     </button>
+//                   </td>
+//                 </tr>
+//               ))
+//             )}
+//           </tbody>
+//         </table>
+//       </div>
+
+//       <div className="flex justify-end mt-4">
+//         <Button onClick={saveToLocalStorage} className="bg-green-600 text-white">
+//           <SaveAllIcon className="mr-2" /> Save All
+//         </Button>
+//       </div>
+//     </Card>
+//   );
+// };
+
+// export default StockMovements;
+
+
+
+
+
+
+// import React, { useState, useEffect } from "react";
+// import { SaveAllIcon, Trash2 } from "lucide-react";
+// import Card from "@/components/ui/Card";
+// import Button from "@/components/ui/Button";
+
+// const StockMovements = () => {
+//   const [rows, setRows] = useState([]);
+
+//   // ✅ Load from JobSheet (estimate + extraWork) with correct Cost & Total
+//   useEffect(() => {
+//     const jobSheetEstimate = JSON.parse(localStorage.getItem("jobSheetEstimate")) || [];
+//     const extraWork = JSON.parse(localStorage.getItem("extraWork")) || [];
+
+//     const combined = [...jobSheetEstimate, ...extraWork];
+
+//     const transformedRows = combined.map((r) => {
+//       const qty = parseFloat(r.qty || r.quantity || 0);
+//       const cost = parseFloat(r.rate || r.cost || 0);
+//       return {
+//         date: new Date().toISOString().split("T")[0],
+//         type: "In",
+//         item: r.item || "",
+//         linkedTo: r.category || "",
+//         qty: qty,
+//         cost: cost,
+//         total: (qty * cost).toFixed(2),
+//         referral: r.jobSheetNo || "JobSheet",
+//       };
+//     });
+
+//     setRows(transformedRows);
+//     localStorage.setItem("stockMovements", JSON.stringify(transformedRows));
+//   }, []);
+
+//   // ✅ Handle manual type change
+//   const handleChangeType = (index, value) => {
+//     const updated = [...rows];
+//     updated[index].type = value;
+//     setRows(updated);
+//     localStorage.setItem("stockMovements", JSON.stringify(updated));
+//   };
+
+//   // ✅ Delete row
+//   const handleDelete = (index) => {
+//     const updated = rows.filter((_, i) => i !== index);
+//     setRows(updated);
+//     localStorage.setItem("stockMovements", JSON.stringify(updated));
+//   };
+
+//   // ✅ Save manually (optional)
+//   const saveToLocalStorage = () => {
+//     localStorage.setItem("stockMovements", JSON.stringify(rows));
+//   };
+
+//   return (
+//     <Card className="p-4 mt-2">
+//       <h2 className="text-lg font-semibold mb-4">📦 Stock Movements</h2>
+
+//       <div className="overflow-x-auto">
+//         <table className="min-w-full border border-gray-300 text-sm">
+//           <thead className="bg-gray-100">
+//             <tr>
+//               <th className="border p-2">Date</th>
+//               <th className="border p-2">Type</th>
+//               <th className="border p-2">Item</th>
+//               <th className="border p-2">Category</th>
+//               <th className="border p-2 text-right">Qty</th>
+//               <th className="border p-2 text-right">Cost</th>
+//               <th className="border p-2 text-right">Total</th>
+//               <th className="border p-2">Referral (JobSheet)</th>
+//               <th className="border p-2 text-center">Action</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {rows.length === 0 ? (
+//               <tr>
+//                 <td colSpan="9" className="text-center p-3 text-gray-500">
+//                   No Stock Movement Data Found
+//                 </td>
+//               </tr>
+//             ) : (
+//               rows.map((row, index) => (
+//                 <tr key={index} className="hover:bg-gray-50">
+//                   <td className="border p-2 text-center">{row.date}</td>
+
+//                   <td className="border p-2">
+//                     <select
+//                       value={row.type}
+//                       onChange={(e) => handleChangeType(index, e.target.value)}
+//                       className="w-full border rounded px-2 py-1"
+//                     >
+//                       <option value="In">In</option>
+//                       <option value="Out">Out</option>
+//                     </select>
+//                   </td>
+
+//                   <td className="border p-2">{row.item}</td>
+//                   <td className="border p-2">{row.linkedTo}</td>
+//                   <td className="border p-2 text-right">{row.qty}</td>
+//                   <td className="border p-2 text-right">{row.cost}</td>
+//                   <td className="border p-2 text-right">{row.total}</td>
+//                   <td className="border p-2">{row.referral}</td>
+
+//                   {/* ✅ Delete Button */}
+//                   <td className="border p-2 text-center">
+//                     <button
+//                       onClick={() => handleDelete(index)}
+//                       className="text-red-600 hover:text-red-800"
+//                       title="Delete Row"
+//                     >
+//                       <Trash2 size={18} />
+//                     </button>
+//                   </td>
+//                 </tr>
+//               ))
+//             )}
+//           </tbody>
+//         </table>
+//       </div>
+
+//       <div className="flex justify-end mt-4">
+//         <Button onClick={saveToLocalStorage} className="bg-green-600 text-white">
+//           <SaveAllIcon className="mr-2" /> Save All
+//         </Button>
+//       </div>
+//     </Card>
+//   );
+// };
+
+// export default StockMovements;
+
+
+
+
+
+
+// import React, { useState, useEffect } from "react";
+// import { SaveAllIcon, Trash2 } from "lucide-react";
+// import Card from "@/components/ui/Card";
+// import Button from "@/components/ui/Button";
+
+// const StockMovements = () => {
+//   const [rows, setRows] = useState([]);
+
+//   // ✅ Load from JobSheet (estimate + extraWork) with correct Cost & Total
+//   useEffect(() => {
+//     const jobSheetEstimate = JSON.parse(localStorage.getItem("jobSheetEstimate")) || [];
+//     const extraWork = JSON.parse(localStorage.getItem("extraWork")) || [];
+
+//     const combined = [...jobSheetEstimate, ...extraWork];
+
+//     const transformedRows = combined.map((r) => {
+//       const qty = parseFloat(r.qty || r.quantity || 0);
+//       const cost = parseFloat(r.rate || r.cost || 0);
+//       const total = qty * cost; // keep as number
+//       return {
+//         date: new Date().toISOString().split("T")[0],
+//         type: "In",
+//         item: r.item || "",
+//         linkedTo: r.category || "",
+//         qty,
+//         cost,
+//         total,
+//         referral: r.jobSheetNo || "JobSheet",
+//       };
+//     });
+
+//     setRows(transformedRows);
+//     localStorage.setItem("stockMovements", JSON.stringify(transformedRows));
+//   }, []);
+
+//   // ✅ Handle manual type change
+//   const handleChangeType = (index, value) => {
+//     const updated = [...rows];
+//     updated[index].type = value;
+//     setRows(updated);
+//     localStorage.setItem("stockMovements", JSON.stringify(updated));
+//   };
+
+//   // ✅ Delete row
+//   const handleDelete = (index) => {
+//     const updated = rows.filter((_, i) => i !== index);
+//     setRows(updated);
+//     localStorage.setItem("stockMovements", JSON.stringify(updated));
+//   };
+
+//   // ✅ Save manually (optional)
+//   const saveToLocalStorage = () => {
+//     localStorage.setItem("stockMovements", JSON.stringify(rows));
+//   };
+
+//   return (
+//     <Card className="p-4 mt-2">
+//       <h2 className="text-lg font-semibold mb-4">📦 Stock Movements</h2>
+
+//       <div className="overflow-x-auto">
+//         <table className="min-w-full border border-gray-300 text-sm">
+//           <thead className="bg-gray-100">
+//             <tr>
+//               <th className="border p-2">Date</th>
+//               <th className="border p-2">Type</th>
+//               <th className="border p-2">Item</th>
+//               <th className="border p-2">Category</th>
+//               <th className="border p-2 text-right">Qty</th>
+//               <th className="border p-2 text-right">Cost</th>
+//               <th className="border p-2 text-right">Total</th>
+//               <th className="border p-2">Referral (JobSheet)</th>
+//               <th className="border p-2 text-center">Action</th>
+//             </tr>
+//           </thead>
+//           <tbody>
+//             {rows.length === 0 ? (
+//               <tr>
+//                 <td colSpan="9" className="text-center p-3 text-gray-500">
+//                   No Stock Movement Data Found
+//                 </td>
+//               </tr>
+//             ) : (
+//               rows.map((row, index) => (
+//                 <tr key={index} className="hover:bg-gray-50">
+//                   <td className="border p-2 text-center">{row.date}</td>
+
+//                   <td className="border p-2">
+//                     <select
+//                       value={row.type}
+//                       onChange={(e) => handleChangeType(index, e.target.value)}
+//                       className="w-full border rounded px-2 py-1"
+//                     >
+//                       <option value="In">In</option>
+//                       <option value="Out">Out</option>
+//                     </select>
+//                   </td>
+
+//                   <td className="border p-2">{row.item}</td>
+//                   <td className="border p-2">{row.linkedTo}</td>
+//                   <td className="border p-2 text-right">{row.qty}</td>
+//                   <td className="border p-2 text-right">{row.cost}</td>
+//                   <td className="border p-2 text-right">{row.total.toFixed(2)}</td>
+//                   <td className="border p-2">{row.referral}</td>
+
+//                   {/* ✅ Delete Button */}
+//                   <td className="border p-2 text-center">
+//                     <button
+//                       onClick={() => handleDelete(index)}
+//                       className="text-red-600 hover:text-red-800"
+//                       title="Delete Row"
+//                     >
+//                       <Trash2 size={18} />
+//                     </button>
+//                   </td>
+//                 </tr>
+//               ))
+//             )}
+//           </tbody>
+//         </table>
+//       </div>
+
+//       <div className="flex justify-end mt-4">
+//         <Button onClick={saveToLocalStorage} className="bg-green-600 text-white">
+//           <SaveAllIcon className="mr-2" /> Save All
+//         </Button>
+//       </div>
+//     </Card>
+//   );
+// };
+
+// export default StockMovements;
+
+
+import React, { useState, useEffect } from "react";
+import { SaveAllIcon, Trash2 } from "lucide-react";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 
 const StockMovements = () => {
-  const [movements, setMovements] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState({ id: null, type: null });
-  const [filters, setFilters] = useState({
-    itemSearch: '',
-    startDate: '',
-    endDate: '',
-    movementType: '',
-    referenceType: '',
-  });
+  const [rows, setRows] = useState([]);
 
+  // Load from JobSheet (estimate + extraWork) with robust cost/total logic
   useEffect(() => {
-    fetchMovements();
-  }, [filters]);
+    const jobSheetEstimate = JSON.parse(localStorage.getItem("jobSheetEstimate")) || [];
+    const extraWork = JSON.parse(localStorage.getItem("extraWork")) || [];
 
-  const fetchMovements = async () => {
-    setLoading(true);
-    try {
-      let query = supabase
-        .from('stock_movements')
-        .select(`
-          *,
-          item:inventory_items(id, item_name, unit, category:inventory_categories(name))
-        `)
-        .order('movement_date', { ascending: false })
-        .order('created_at', { ascending: false });
+    const combined = [...jobSheetEstimate, ...extraWork];
 
-      if (filters.startDate) {
-        query = query.gte('movement_date', filters.startDate);
-      }
-      if (filters.endDate) {
-        query = query.lte('movement_date', filters.endDate);
-      }
-      if (filters.movementType) {
-        query = query.eq('movement_type', filters.movementType);
-      }
-      if (filters.referenceType) {
-        query = query.eq('reference_type', filters.referenceType);
-      }
+    const transformedRows = combined.map((r) => {
+      // normalize numeric inputs
+      const qty = Number.isFinite(parseFloat(r.qty)) ? parseFloat(r.qty) : (Number.isFinite(parseFloat(r.quantity)) ? parseFloat(r.quantity) : 0);
+      const cost = Number.isFinite(parseFloat(r.cost)) ? parseFloat(r.cost) : (Number.isFinite(parseFloat(r.rate)) ? parseFloat(r.rate) : 0);
+      const multiplier =
+        Number.isFinite(parseFloat(r.multiplier)) ? parseFloat(r.multiplier) :
+        Number.isFinite(parseFloat(r.mul)) ? parseFloat(r.mul) :
+        0;
 
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      let filteredData = data || [];
-      if (filters.itemSearch) {
-        filteredData = filteredData.filter(
-          (m) =>
-            m.item?.item_name?.toLowerCase().includes(filters.itemSearch.toLowerCase()) ||
-            m.item?.category?.name?.toLowerCase().includes(filters.itemSearch.toLowerCase())
-        );
-      }
-
-      setMovements(filteredData);
-    } catch (error) {
-      console.error('Error fetching movements:', error);
-      toast.error('Failed to load stock movements');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openDocumentModal = (movement) => {
-    if (movement.reference_id && movement.reference_type) {
-      if (['purchase', 'purchase_challan', 'job'].includes(movement.reference_type)) {
-        setSelectedDocument({
-          id: movement.reference_id,
-          type: movement.reference_type,
-        });
-        setIsDocumentModalOpen(true);
+      // priority for total:
+      // 1) if row.total provided and numeric -> use it
+      // 2) else if multiplier present -> cost * multiplier (JobSheet style)
+      // 3) else if qty present -> cost * qty
+      // 4) else fallback to cost
+      let totalValue = 0;
+      if (Number.isFinite(parseFloat(r.total))) {
+        totalValue = parseFloat(r.total);
+      } else if (multiplier > 0) {
+        totalValue = cost * multiplier;
+      } else if (qty > 0) {
+        totalValue = cost * qty;
       } else {
-        toast.info('This is a manual entry or system-generated record');
+        totalValue = cost;
       }
-    } else {
-      toast.error('No linked document found');
-    }
-  };
 
-  const exportToCSV = () => {
-    const headers = ['Date', 'Item Name', 'Category', 'Type', 'Quantity', 'Reference Type', 'Reference No', 'Notes'];
-    const csvContent = [
-      headers.join(','),
-      ...movements.map((m) =>
-        [
-          m.movement_date,
-          m.item?.item_name || '',
-          m.item?.category?.name || '',
-          m.movement_type?.toUpperCase(),
-          m.quantity,
-          m.reference_type || '',
-          m.reference_no || '',
-          m.notes || '',
-        ].join(',')
-      ),
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `stock_movements_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    toast.success('Stock movements exported to CSV');
-  };
-
-  const saveToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('Stock Movements History', 14, 15);
-    doc.setFontSize(10);
-    doc.text(
-      `Period: ${filters.startDate || 'All'} to ${filters.endDate || 'All'}`,
-      14,
-      22
-    );
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 27);
-
-    let yPos = 35;
-    doc.setFontSize(9);
-    doc.text('Date', 14, yPos);
-    doc.text('Item', 40, yPos);
-    doc.text('Type', 100, yPos);
-    doc.text('Qty', 120, yPos);
-    doc.text('Ref No', 150, yPos);
-
-    yPos += 5;
-    movements.forEach((m) => {
-      if (yPos > 280) {
-        doc.addPage();
-        yPos = 20;
-      }
-      doc.text(m.movement_date, 14, yPos);
-      doc.text(m.item?.item_name?.substring(0, 25) || '', 40, yPos);
-      doc.text(m.movement_type?.toUpperCase() || '', 100, yPos);
-      doc.text(`${m.quantity} ${m.item?.unit || ''}`, 120, yPos);
-      doc.text(m.reference_no || '', 150, yPos);
-      yPos += 6;
+      return {
+        // keep raw numbers so we can format when rendering
+        date: new Date().toISOString().split("T")[0],
+        type: "In",
+        item: r.item || "",
+        linkedTo: r.category || r.linkedTo || "",
+        qty: qty,     // number (0 if not provided)
+        cost: cost,   // number
+        total: totalValue, // number
+        referral: r.jobSheetNo || r.referral || "JobSheet",
+      };
     });
 
-    doc.save(`stock_movements_${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success('Stock movements saved as PDF');
+    setRows(transformedRows);
+    localStorage.setItem("stockMovements", JSON.stringify(transformedRows));
+  }, []);
+
+  // Handle manual type change (In/Out)
+  const handleChangeType = (index, value) => {
+    const updated = [...rows];
+    updated[index].type = value;
+    setRows(updated);
+    localStorage.setItem("stockMovements", JSON.stringify(updated));
   };
 
-  const handlePrint = () => {
-    window.print();
-    toast.success('Print dialog opened');
+  // Delete row -> update state + localStorage
+  const handleDelete = (index) => {
+    if (!window.confirm("Are you sure you want to delete this stock row?")) return;
+    const updated = rows.filter((_, i) => i !== index);
+    setRows(updated);
+    localStorage.setItem("stockMovements", JSON.stringify(updated));
+  };
+
+  // Save manually (optional)
+  const saveToLocalStorage = () => {
+    localStorage.setItem("stockMovements", JSON.stringify(rows));
+    alert("✅ Stock Movements saved.");
   };
 
   return (
-    <div>
-      <Modal
-        isOpen={isDocumentModalOpen}
-        onClose={() => {
-          setIsDocumentModalOpen(false);
-          setSelectedDocument({ id: null, type: null });
-        }}
-        title="Document Details"
-      >
-        <DocumentDetailsModal
-          documentId={selectedDocument.id}
-          documentType={selectedDocument.type}
-          onClose={() => {
-            setIsDocumentModalOpen(false);
-            setSelectedDocument({ id: null, type: null });
-          }}
-        />
-      </Modal>
+    <Card className="p-4 mt-2">
+      <h2 className="text-lg font-semibold mb-4">📦 Stock Movements</h2>
 
-      <Card>
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-dark-text mb-4">
-            Stock Movements History
-          </h3>
+      <div className="overflow-x-auto">
+        <table className="min-w-full border border-gray-300 text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border p-2">Date</th>
+              <th className="border p-2">Type</th>
+              <th className="border p-2">Item</th>
+              <th className="border p-2">Category</th>
+              <th className="border p-2 text-right">Qty</th>
+              <th className="border p-2 text-right">Cost</th>
+              <th className="border p-2 text-right">Total</th>
+              <th className="border p-2">Referral (JobSheet)</th>
+              <th className="border p-2 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan="9" className="text-center p-3 text-gray-500">
+                  No Stock Movement Data Found
+                </td>
+              </tr>
+            ) : (
+              rows.map((row, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="border p-2 text-center">{row.date}</td>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search item or category..."
-                value={filters.itemSearch}
-                onChange={(e) => setFilters({ ...filters, itemSearch: e.target.value })}
-                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-              />
-            </div>
+                  <td className="border p-2">
+                    <select
+                      value={row.type}
+                      onChange={(e) => handleChangeType(index, e.target.value)}
+                      className="w-full border rounded px-2 py-1"
+                    >
+                      <option value="In">In</option>
+                      <option value="Out">Out</option>
+                    </select>
+                  </td>
 
-            <input
-              type="date"
-              value={filters.startDate}
-              onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-              placeholder="Start Date"
-              className="p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-            />
+                  <td className="border p-2">{row.item}</td>
+                  <td className="border p-2">{row.linkedTo}</td>
 
-            <input
-              type="date"
-              value={filters.endDate}
-              onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-              placeholder="End Date"
-              className="p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-            />
+                  <td className="border p-2 text-right">{Number.isFinite(row.qty) ? row.qty : "-"}</td>
+                  <td className="border p-2 text-right">{Number.isFinite(row.cost) ? row.cost.toFixed(2) : "-"}</td>
+                  <td className="border p-2 text-right">{Number.isFinite(row.total) ? row.total.toFixed(2) : "-"}</td>
+                  <td className="border p-2">{row.referral}</td>
 
-            <select
-              value={filters.movementType}
-              onChange={(e) => setFilters({ ...filters, movementType: e.target.value })}
-              className="p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-            >
-              <option value="">All Types</option>
-              <option value="in">IN (Received)</option>
-              <option value="out">OUT (Used)</option>
-            </select>
+                  <td className="border p-2 text-center">
+                    <button
+                      onClick={() => handleDelete(index)}
+                      className="text-red-600 hover:text-red-800"
+                      title="Delete Row"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-            <select
-              value={filters.referenceType}
-              onChange={(e) => setFilters({ ...filters, referenceType: e.target.value })}
-              className="p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-            >
-              <option value="">All References</option>
-              <option value="purchase">Purchase</option>
-              <option value="purchase_challan">Purchase Challan</option>
-              <option value="job">Job Sheet</option>
-              <option value="adjustment">Adjustment</option>
-              <option value="opening">Opening Stock</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-end space-x-2">
-            <Button variant="secondary" onClick={exportToCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
-            <Button variant="secondary" onClick={saveToPDF}>
-              <FileText className="h-4 w-4 mr-2" />
-              Save PDF
-            </Button>
-            <Button variant="secondary" onClick={handlePrint}>
-              <Printer className="h-4 w-4 mr-2" />
-              Print
-            </Button>
-          </div>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-red"></div>
-              <span className="ml-3 text-gray-600 dark:text-dark-text-secondary">
-                Loading movements...
-              </span>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 dark:bg-gray-700 text-left">
-                    <tr>
-                      <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Date</th>
-                      <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Item Name</th>
-                      <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Category</th>
-                      <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Type</th>
-                      <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Quantity</th>
-                      <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Reference</th>
-                      <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Ref No</th>
-                      <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {movements.length > 0 ? (
-                      movements.map((movement) => (
-                        <tr
-                          key={movement.id}
-                          className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                        >
-                          <td className="p-3 text-gray-700 dark:text-dark-text-secondary">
-                            {new Date(movement.movement_date).toLocaleDateString('en-IN')}
-                          </td>
-                          <td className="p-3 font-medium text-gray-900 dark:text-dark-text">
-                            {movement.item?.item_name || '-'}
-                          </td>
-                          <td className="p-3">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                              {movement.item?.category?.name || '-'}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                movement.movement_type === 'in'
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                              }`}
-                            >
-                              {movement.movement_type?.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="p-3 text-right font-medium text-gray-900 dark:text-dark-text">
-                            {parseFloat(movement.quantity).toFixed(2)} {movement.item?.unit || ''}
-                          </td>
-                          <td className="p-3 text-gray-700 dark:text-dark-text-secondary capitalize">
-                            {movement.reference_type?.replace('_', ' ') || '-'}
-                          </td>
-                          <td className="p-3">
-                            {movement.reference_no && ['purchase', 'purchase_challan', 'job'].includes(movement.reference_type) ? (
-                              <button
-                                onClick={() => openDocumentModal(movement)}
-                                className="flex items-center text-blue-600 dark:text-blue-400 hover:underline"
-                              >
-                                {movement.reference_no}
-                                <ExternalLink className="h-3 w-3 ml-1" />
-                              </button>
-                            ) : (
-                              <span className="text-gray-700 dark:text-dark-text-secondary">
-                                {movement.reference_no || '-'}
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-3 text-gray-700 dark:text-dark-text-secondary text-sm">
-                            {movement.notes || '-'}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="8" className="text-center p-12">
-                          <div className="flex flex-col items-center text-gray-500 dark:text-dark-text-secondary">
-                            <p className="text-lg font-medium">No movements found</p>
-                            <p className="text-sm mt-1">
-                              {filters.itemSearch || filters.startDate || filters.movementType || filters.referenceType
-                                ? 'Try adjusting your filters'
-                                : 'Stock movements will appear here as items are purchased or used'}
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {movements.length > 0 && (
-                <div className="mt-4 text-sm text-gray-600 dark:text-dark-text-secondary">
-                  Showing {movements.length} movement(s)
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </Card>
-    </div>
+      <div className="flex justify-end mt-4">
+        <Button onClick={saveToLocalStorage} className="bg-green-600 text-white">
+          <SaveAllIcon className="mr-2" /> Save All
+        </Button>
+      </div>
+    </Card>
   );
 };
 
 export default StockMovements;
+
+

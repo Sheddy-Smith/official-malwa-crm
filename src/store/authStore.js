@@ -7,16 +7,7 @@ const useAuthStore = create(
       isAuthenticated: false,
       user: null, // { name, email, role, branch }
       login: (userData, credentials) => {
-        const validCredentials = [
-          { email: 'malwatrolley@gmail.com', password: 'Malwa822' },
-          { email: 'SheddySmith822@gmail.com', password: 'S#d_8224' }
-        ];
-
-        const isValid = validCredentials.some(
-          cred => cred.email === credentials.email && cred.password === credentials.password
-        );
-
-        if (isValid) {
+        if (credentials.email === 'malwatrolley@gmail.com' && credentials.password === 'Malwa822') {
           set({ isAuthenticated: true, user: userData });
           return true;
         }

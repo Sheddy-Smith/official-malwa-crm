@@ -10,130 +10,20 @@ import useCustomerStore from '@/store/customerStore';
 import { toast } from 'sonner';
 
 const CustomerForm = ({ onSave, onCancel }) => {
-    const [formData, setFormData] = useState({
-        name: '',
-        company: '',
-        phone: '',
-        address: '',
-        gstin: '',
-        credit_limit: 0,
-        credit_days: 30,
-        opening_balance: 0
-    });
-
+    const [formData, setFormData] = useState({ name: '', phone: '', address: '', gstin: '' });
     const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
-
     const handleSubmit = (e) => {
         e.preventDefault();
         if(!formData.name || !formData.phone) return toast.error("Name and Phone are required.");
         onSave(formData);
     };
-
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-                <label className="block text-sm font-medium mb-1 dark:text-dark-text">Name *</label>
-                <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded-lg bg-transparent dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-                    required
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium mb-1 dark:text-dark-text">Company</label>
-                <input
-                    type="text"
-                    name="company"
-                    value={formData.company}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded-lg bg-transparent dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium mb-1 dark:text-dark-text">Phone *</label>
-                <input
-                    type="text"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded-lg bg-transparent dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-                    required
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium mb-1 dark:text-dark-text">Address</label>
-                <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    rows="2"
-                    className="w-full p-2 border rounded-lg bg-transparent dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-                />
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium mb-1 dark:text-dark-text">GSTIN</label>
-                <input
-                    type="text"
-                    name="gstin"
-                    value={formData.gstin}
-                    onChange={handleChange}
-                    className="w-full p-2 border rounded-lg bg-transparent dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-                />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <label className="block text-sm font-medium mb-1 dark:text-dark-text">Credit Limit (₹)</label>
-                    <input
-                        type="number"
-                        name="credit_limit"
-                        value={formData.credit_limit}
-                        onChange={handleChange}
-                        min="0"
-                        step="1"
-                        className="w-full p-2 border rounded-lg bg-transparent dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium mb-1 dark:text-dark-text">Credit Days</label>
-                    <input
-                        type="number"
-                        name="credit_days"
-                        value={formData.credit_days}
-                        onChange={handleChange}
-                        min="0"
-                        step="1"
-                        className="w-full p-2 border rounded-lg bg-transparent dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-                    />
-                </div>
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium mb-1 dark:text-dark-text">Opening Balance (₹)</label>
-                <input
-                    type="number"
-                    name="opening_balance"
-                    value={formData.opening_balance}
-                    onChange={handleChange}
-                    step="0.01"
-                    className="w-full p-2 border rounded-lg bg-transparent dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-                />
-                <p className="text-xs text-gray-500 dark:text-dark-text-secondary mt-1">
-                    Enter positive value if customer owes you money
-                </p>
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-4 border-t dark:border-gray-700">
-                <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-                <Button type="submit">Save Customer</Button>
-            </div>
+            <div><label>Name</label><input type="text" name="name" onChange={handleChange} className="w-full mt-1 p-2 border rounded-lg bg-transparent dark:border-gray-600 focus:ring-2 focus:ring-brand-red" required /></div>
+            <div><label>Phone</label><input type="text" name="phone" onChange={handleChange} className="w-full mt-1 p-2 border rounded-lg bg-transparent dark:border-gray-600 focus:ring-2 focus:ring-brand-red" required /></div>
+            <div><label>Address</label><input type="text" name="address" onChange={handleChange} className="w-full mt-1 p-2 border rounded-lg bg-transparent dark:border-gray-600 focus:ring-2 focus:ring-brand-red" /></div>
+            <div><label>GSTIN (Optional)</label><input type="text" name="gstin" onChange={handleChange} className="w-full mt-1 p-2 border rounded-lg bg-transparent dark:border-gray-600 focus:ring-2 focus:ring-brand-red" /></div>
+            <div className="flex justify-end space-x-2"><Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button><Button type="submit">Save</Button></div>
         </form>
     );
 };

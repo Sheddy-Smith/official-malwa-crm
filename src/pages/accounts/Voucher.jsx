@@ -1,652 +1,845 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import Modal from '@/components/ui/Modal';
-import ConfirmModal from '@/components/ui/ConfirmModal';
-import { toast } from 'sonner';
-import { PlusCircle, Edit, Trash2, Download, Printer, Search, Receipt } from 'lucide-react';
+// // running code 
+// import React, { useEffect, useState } from "react";
 
-const VoucherForm = ({ voucher, vendors, labour, suppliers, onSave, onCancel }) => {
-  const [formData, setFormData] = useState(
-    voucher || {
-      voucher_no: '',
-      voucher_date: new Date().toISOString().split('T')[0],
-      party_type: 'vendor',
-      party_id: '',
-      amount: 0,
-      payment_method: 'cash',
-      upi_id: '',
-      bank_details: '',
-      reference_no: '',
-      notes: '',
-    }
-  );
+// /*
+//   Voucher.jsx
+//   - Beginner-friendly voucher system
+//   - Features:
+//     * Add voucher (type: Vendor | Labour | Supplier)
+//     * Payment method (UPI / Bank / Cash / Manual) with relevant fields
+//     * Each voucher saved to a global vouchers list + appended to the chosen ledger
+//     * Data persisted in localStorage
+//     * Simple tab view: All Vouchers | Vendor Ledger | Labour Ledger | Supplier Ledger
+//     * Basic delete function
+//   - No external UI libraries required (Tailwind classes used)
+// */
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+// const VOUCHERS_KEY = "malwa_vouchers_v1";
+// const LEDGERS_KEY = "malwa_ledgers_v1";
 
-    if (name === 'party_type') {
-      setFormData({ ...formData, party_type: value, party_id: '' });
-    }
-  };
+// const defaultLedgers = {
+//   Vendor: [],
+//   Labour: [],
+//   Supplier: [],
+// };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.party_id) {
-      toast.error('Party is required.');
-      return;
-    }
-    if (parseFloat(formData.amount) <= 0) {
-      toast.error('Amount must be greater than 0.');
-      return;
-    }
-    if (formData.payment_method === 'upi' && !formData.upi_id) {
-      toast.error('UPI ID is required for UPI payments.');
-      return;
-    }
-    if (formData.payment_method === 'bank' && !formData.bank_details) {
-      toast.error('Bank details are required for bank transfers.');
-      return;
-    }
-    onSave(formData);
-  };
+// const todayISO = () => new Date().toISOString().split("T")[0];
 
-  const getPartyList = () => {
-    switch (formData.party_type) {
-      case 'vendor':
-        return vendors;
-      case 'labour':
-        return labour;
-      case 'supplier':
-        return suppliers;
-      default:
-        return [];
-    }
-  };
+// const Badge = ({ children }) => (
+//   <span className="inline-block px-2 py-0.5 text-xs rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+//     {children}
+//   </span>
+// );
 
-  const partyList = getPartyList();
-  const selectedParty = partyList.find((p) => p.id === formData.party_id);
+// const Voucher = () => {
+//   // --- UI State ---
+//   const [activeTab, setActiveTab] = useState("All"); // All | Vendor | Labour | Supplier
+//   const [showForm, setShowForm] = useState(false);
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-            Voucher No
-          </label>
-          <input
-            type="text"
-            name="voucher_no"
-            value={formData.voucher_no}
-            onChange={handleChange}
-            placeholder="Auto-generated if empty"
-            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-          />
-        </div>
+//   // --- Data State (vouchers + ledgers) ---
+//   const [vouchers, setVouchers] = useState(() => {
+//     const raw = localStorage.getItem(VOUCHERS_KEY);
+//     return raw ? JSON.parse(raw) : [];
+//   });
+//   const [ledgers, setLedgers] = useState(() => {
+//     const raw = localStorage.getItem(LEDGERS_KEY);
+//     return raw ? JSON.parse(raw) : defaultLedgers;
+//   });
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-            Voucher Date *
-          </label>
-          <input
-            type="date"
-            name="voucher_date"
-            value={formData.voucher_date}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-            required
-          />
-        </div>
-      </div>
+//   // --- Form State ---
+//   const [type, setType] = useState("Vendor"); // Vendor | Labour | Supplier
+//   const [party, setParty] = useState(""); // party name (supplier/vendor/labour name)
+//   const [amount, setAmount] = useState("");
+//   const [date, setDate] = useState(todayISO());
+//   const [method, setMethod] = useState("UPI"); // UPI | Bank | Cash | Manual
+//   const [upi, setUpi] = useState("");
+//   const [bankAcc, setBankAcc] = useState("");
+//   const [notes, setNotes] = useState("");
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-          Party Type *
-        </label>
-        <select
-          name="party_type"
-          value={formData.party_type}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-          required
-        >
-          <option value="vendor">Vendor</option>
-          <option value="labour">Labour</option>
-          <option value="supplier">Supplier</option>
-        </select>
-      </div>
+//   // For edit (optional simple edit mode) - we keep it beginner friendly: add/edit same modal
+//   const [editingId, setEditingId] = useState(null);
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-          Party Name *
-        </label>
-        <select
-          name="party_id"
-          value={formData.party_id}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-          required
-        >
-          <option value="">Select {formData.party_type}</option>
-          {partyList.map((party) => (
-            <option key={party.id} value={party.id}>
-              {party.name}
-            </option>
-          ))}
-        </select>
-        {selectedParty && selectedParty.balance !== undefined && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Current Balance: ₹{parseFloat(selectedParty.balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </p>
-        )}
-      </div>
+//   // Save to localStorage whenever data changes
+//   useEffect(() => {
+//     localStorage.setItem(VOUCHERS_KEY, JSON.stringify(vouchers));
+//   }, [vouchers]);
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-          Amount * (₹)
-        </label>
-        <input
-          type="number"
-          name="amount"
-          value={formData.amount}
-          onChange={handleChange}
-          step="0.01"
-          min="0.01"
-          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-          required
-        />
-      </div>
+//   useEffect(() => {
+//     localStorage.setItem(LEDGERS_KEY, JSON.stringify(ledgers));
+//   }, [ledgers]);
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-          Payment Method *
-        </label>
-        <select
-          name="payment_method"
-          value={formData.payment_method}
-          onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-          required
-        >
-          <option value="cash">Cash</option>
-          <option value="upi">UPI</option>
-          <option value="bank">Bank Transfer</option>
-          <option value="cheque">Cheque</option>
-        </select>
-      </div>
+//   // Helper: reset form
+//   const resetForm = () => {
+//     setType("Vendor");
+//     setParty("");
+//     setAmount("");
+//     setDate(todayISO());
+//     setMethod("UPI");
+//     setUpi("");
+//     setBankAcc("");
+//     setNotes("");
+//     setEditingId(null);
+//   };
 
-      {formData.payment_method === 'upi' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-            UPI ID *
-          </label>
-          <input
-            type="text"
-            name="upi_id"
-            value={formData.upi_id}
-            onChange={handleChange}
-            placeholder="e.g., example@upi"
-            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-          />
-        </div>
-      )}
+//   // Create new id (simple incremental)
+//   const nextId = () => {
+//     if (vouchers.length === 0) return 1;
+//     return Math.max(...vouchers.map((v) => v.id)) + 1;
+//   };
 
-      {formData.payment_method === 'bank' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-            Bank Details *
-          </label>
-          <input
-            type="text"
-            name="bank_details"
-            value={formData.bank_details}
-            onChange={handleChange}
-            placeholder="Account No / IFSC"
-            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-          />
-        </div>
-      )}
+//   // Save / Update voucher
+//   const handleSaveVoucher = (e) => {
+//     e.preventDefault();
 
-      {(formData.payment_method === 'cheque' || formData.payment_method === 'bank') && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-            Reference No
-          </label>
-          <input
-            type="text"
-            name="reference_no"
-            value={formData.reference_no}
-            onChange={handleChange}
-            placeholder="Cheque No / Transaction ID"
-            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-          />
-        </div>
-      )}
+//     // Basic validation
+//     if (!party.trim()) {
+//       alert("Please enter party name (Vendor / Labour / Supplier).");
+//       return;
+//     }
+//     if (!amount || Number(amount) <= 0) {
+//       alert("Please enter a valid amount.");
+//       return;
+//     }
+//     // Payment method specific validation
+//     if (method === "UPI" && !upi.trim()) {
+//       alert("Please enter UPI id for UPI payments.");
+//       return;
+//     }
+//     if (method === "Bank" && !bankAcc.trim()) {
+//       alert("Please enter bank account details for Bank payments.");
+//       return;
+//     }
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-          Notes
-        </label>
-        <textarea
-          name="notes"
-          value={formData.notes}
-          onChange={handleChange}
-          rows="2"
-          placeholder="Payment details or remarks..."
-          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-        />
-      </div>
+//     const voucherObj = {
+//       id: editingId || nextId(),
+//       type, // Vendor | Labour | Supplier
+//       party: party.trim(),
+//       amount: Number(amount),
+//       date,
+//       method, // UPI | Bank | Cash | Manual
+//       upi: method === "UPI" ? upi.trim() : "",
+//       bankAcc: method === "Bank" ? bankAcc.trim() : "",
+//       notes: notes.trim() || "",
+//       createdAt: new Date().toISOString(),
+//     };
 
-      <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit">{voucher ? 'Update Voucher' : 'Save Voucher'}</Button>
-      </div>
-    </form>
-  );
-};
+//     if (editingId) {
+//       // update existing voucher
+//       const updated = vouchers.map((v) => (v.id === editingId ? voucherObj : v));
+//       setVouchers(updated);
 
+//       // update ledger entry (find & replace by id)
+//       setLedgers((prev) => {
+//         const copy = { ...prev };
+//         // remove old id if exists in all ledgers & re-add to the correct ledger
+//         ["Vendor", "Labour", "Supplier"].forEach((k) => {
+//           copy[k] = copy[k].filter((it) => it.id !== editingId);
+//         });
+//         // add to proper ledger
+//         copy[type] = [...copy[type], voucherObj];
+//         return copy;
+//       });
+//     } else {
+//       // add new voucher
+//       setVouchers((prev) => [...prev, voucherObj]);
+
+//       // append to ledger of the correct type
+//       setLedgers((prev) => {
+//         const copy = { ...prev };
+//         copy[type] = [...(copy[type] || []), voucherObj];
+//         return copy;
+//       });
+//     }
+
+//     resetForm();
+//     setShowForm(false);
+//   };
+
+//   // Start editing a voucher (populate form)
+//   const handleEdit = (v) => {
+//     setEditingId(v.id);
+//     setType(v.type);
+//     setParty(v.party);
+//     setAmount(String(v.amount));
+//     setDate(v.date || todayISO());
+//     setMethod(v.method || "UPI");
+//     setUpi(v.upi || "");
+//     setBankAcc(v.bankAcc || "");
+//     setNotes(v.notes || "");
+//     setShowForm(true);
+//   };
+
+//   // Delete voucher
+//   const handleDelete = (id) => {
+//     if (!window.confirm("Delete this voucher?")) return;
+//     setVouchers((prev) => prev.filter((v) => v.id !== id));
+//     setLedgers((prev) => {
+//       const copy = { ...prev };
+//       ["Vendor", "Labour", "Supplier"].forEach((k) => {
+//         copy[k] = copy[k].filter((it) => it.id !== id);
+//       });
+//       return copy;
+//     });
+//   };
+
+//   // Render list helpers
+//   const renderVoucherRow = (v) => (
+//     <tr key={v.id} className="hover:bg-gray-50">
+//       <td className="p-2 border text-sm">{v.id}</td>
+//       <td className="p-2 border text-sm">{v.type}</td>
+//       <td className="p-2 border text-sm">{v.party}</td>
+//       <td className="p-2 border text-sm">₹{v.amount.toLocaleString("en-IN")}</td>
+//       <td className="p-2 border text-sm">{v.date}</td>
+//       <td className="p-2 border text-sm">{v.method}</td>
+//       <td className="p-2 border text-sm">{v.method === "UPI" ? v.upi : v.method === "Bank" ? v.bankAcc : "-"}</td>
+//       <td className="p-2 border text-sm">{v.notes || "-"}</td>
+//       <td className="p-2 border text-sm">
+//         <button
+//           onClick={() => handleEdit(v)}
+//           className="px-2 py-1 text-xs bg-yellow-100 rounded"
+//         >
+//           Edit
+//         </button>
+//       </td>
+//       <td className="p-2 border text-sm">
+//         <button
+//           onClick={() => handleDelete(v.id)}
+//           className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded"
+//         >
+//           Delete
+//         </button>
+//       </td>
+//     </tr>
+//   );
+
+//   return (
+//     <div className="p-6 space-y-4">
+//       {/* Header */}
+//       <div className="flex items-center justify-between">
+//         <div>
+//           <h2 className="text-2xl font-bold">Vouchers</h2>
+//           <p className="text-sm text-gray-600">Create & manage payment vouchers.</p>
+//         </div>
+
+//         <div className="flex gap-2">
+//           <Badge>{vouchers.length} total</Badge>
+//           <button
+//             onClick={() => {
+//               resetForm();
+//               setShowForm(true);
+//             }}
+//             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+//           >
+//             + New Voucher
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* Tabs */}
+//       <div className="flex gap-2 items-center">
+//         {["All", "Vendor", "Labour", "Supplier"].map((t) => (
+//           <button
+//             key={t}
+//             onClick={() => setActiveTab(t)}
+//             className={`px-3 py-1 rounded-t-lg border-b-2 ${
+//               activeTab === t ? "border-red-600 text-red-700 bg-red-50" : "border-transparent text-gray-600"
+//             }`}
+//           >
+//             {t}
+//           </button>
+//         ))}
+//       </div>
+
+//       {/* Content */}
+//       <div className="border rounded shadow-sm bg-white p-4">
+//         {/* All Vouchers */}
+//         {activeTab === "All" && (
+//           <>
+//             <h3 className="font-medium mb-3">All Vouchers</h3>
+//             {vouchers.length === 0 ? (
+//               <div className="text-sm text-gray-500">No vouchers created yet.</div>
+//             ) : (
+//               <div className="overflow-x-auto">
+//                 <table className="min-w-full border-collapse">
+//                   <thead>
+//                     <tr className="bg-gray-100">
+//                       <th className="p-2 border text-sm">ID</th>
+//                       <th className="p-2 border text-sm">Type</th>
+//                       <th className="p-2 border text-sm">Party</th>
+//                       <th className="p-2 border text-sm">Amount</th>
+//                       <th className="p-2 border text-sm">Date</th>
+//                       <th className="p-2 border text-sm">Method</th>
+//                       <th className="p-2 border text-sm">UPI/Bank</th>
+//                       <th className="p-2 border text-sm">Notes</th>
+//                       <th className="p-2 border text-sm">Edit</th>
+//                       <th className="p-2 border text-sm">Delete</th>
+//                     </tr>
+//                   </thead>
+//                   <tbody>{vouchers.map(renderVoucherRow)}</tbody>
+//                 </table>
+//               </div>
+//             )}
+//           </>
+//         )}
+
+//         {/* Ledgers */}
+//         {["Vendor", "Labour", "Supplier"].includes(activeTab) && (
+//           <>
+//             <h3 className="font-medium mb-3">{activeTab} Ledger</h3>
+
+//             <div className="mb-4 flex items-center justify-between">
+//               <div className="text-sm text-gray-600">
+//                 Total entries: {ledgers[activeTab]?.length || 0}
+//               </div>
+//               <div className="text-sm font-medium">
+//                 Total amount: ₹
+//                 {(
+//                   (ledgers[activeTab] || []).reduce((s, it) => s + Number(it.amount || 0), 0) || 0
+//                 ).toLocaleString("en-IN")}
+//               </div>
+//             </div>
+
+//             {(!ledgers[activeTab] || ledgers[activeTab].length === 0) ? (
+//               <div className="text-sm text-gray-500">No entries in this ledger.</div>
+//             ) : (
+//               <div className="overflow-x-auto">
+//                 <table className="min-w-full border-collapse">
+//                   <thead>
+//                     <tr className="bg-gray-100">
+//                       <th className="p-2 border text-sm">ID</th>
+//                       <th className="p-2 border text-sm">Party</th>
+//                       <th className="p-2 border text-sm">Amount</th>
+//                       <th className="p-2 border text-sm">Date</th>
+//                       <th className="p-2 border text-sm">Method</th>
+//                       <th className="p-2 border text-sm">UPI/Bank</th>
+//                       <th className="p-2 border text-sm">Notes</th>
+//                       <th className="p-2 border text-sm">Edit</th>
+//                       <th className="p-2 border text-sm">Delete</th>
+//                     </tr>
+//                   </thead>
+//                   <tbody>
+//                     {ledgers[activeTab].map((v) => (
+//                       <tr key={v.id} className="hover:bg-gray-50">
+//                         <td className="p-2 border text-sm">{v.id}</td>
+//                         <td className="p-2 border text-sm">{v.party}</td>
+//                         <td className="p-2 border text-sm">₹{v.amount.toLocaleString("en-IN")}</td>
+//                         <td className="p-2 border text-sm">{v.date}</td>
+//                         <td className="p-2 border text-sm">{v.method}</td>
+//                         <td className="p-2 border text-sm">{v.method === "UPI" ? v.upi : v.method === "Bank" ? v.bankAcc : "-"}</td>
+//                         <td className="p-2 border text-sm">{v.notes || "-"}</td>
+//                         <td className="p-2 border text-sm">
+//                           <button onClick={() => handleEdit(v)} className="px-2 py-1 bg-yellow-100 rounded text-xs">Edit</button>
+//                         </td>
+//                         <td className="p-2 border text-sm">
+//                           <button onClick={() => handleDelete(v.id)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs">Delete</button>
+//                         </td>
+//                       </tr>
+//                     ))}
+//                   </tbody>
+//                 </table>
+//               </div>
+//             )}
+//           </>
+//         )}
+//       </div>
+
+//       {/* Form Modal */}
+//       {showForm && (
+//         <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-40">
+//           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-[92%] max-w-xl p-5">
+//             <div className="flex justify-between items-center mb-4">
+//               <h3 className="text-lg font-semibold">{editingId ? "Edit Voucher" : "New Voucher"}</h3>
+//               <div className="flex gap-2">
+//                 <Badge>{editingId ? "Editing" : "Create"}</Badge>
+//                 <button
+//                   onClick={() => {
+//                     setShowForm(false);
+//                     resetForm();
+//                   }}
+//                   className="px-3 py-1 rounded text-sm bg-gray-100"
+//                 >
+//                   Close
+//                 </button>
+//               </div>
+//             </div>
+
+//             <form onSubmit={handleSaveVoucher} className="space-y-3">
+//               {/* Type */}
+//               <div>
+//                 <label className="block text-sm font-medium">Voucher Type</label>
+//                 <select value={type} onChange={(e) => setType(e.target.value)} className="w-full p-2 border rounded">
+//                   <option value="Vendor">Vendor</option>
+//                   <option value="Labour">Labour</option>
+//                   <option value="Supplier">Supplier</option>
+//                 </select>
+//               </div>
+
+//               {/* Party */}
+//               <div>
+//                 <label className="block text-sm font-medium">Party (Name)</label>
+//                 <input value={party} onChange={(e) => setParty(e.target.value)} className="w-full p-2 border rounded" placeholder={`Enter ${type} name`} />
+//               </div>
+
+//               {/* Amount + Date */}
+//               <div className="grid grid-cols-2 gap-2">
+//                 <div>
+//                   <label className="block text-sm font-medium">Amount</label>
+//                   <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full p-2 border rounded" placeholder="e.g. 2500" />
+//                 </div>
+//                 <div>
+//                   <label className="block text-sm font-medium">Date</label>
+//                   <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-2 border rounded" />
+//                 </div>
+//               </div>
+
+//               {/* Method */}
+//               <div>
+//                 <label className="block text-sm font-medium">Payment Method</label>
+//                 <select value={method} onChange={(e) => setMethod(e.target.value)} className="w-full p-2 border rounded">
+//                   <option value="UPI">UPI</option>
+//                   <option value="Bank">Bank Transfer</option>
+//                   <option value="Cash">Cash</option>
+//                   <option value="Manual">Manual</option>
+//                 </select>
+//               </div>
+
+//               {/* Method-specific fields */}
+//               {method === "UPI" && (
+//                 <div>
+//                   <label className="block text-sm font-medium">UPI ID</label>
+//                   <input value={upi} onChange={(e) => setUpi(e.target.value)} placeholder="example@bank" className="w-full p-2 border rounded" />
+//                 </div>
+//               )}
+
+//               {method === "Bank" && (
+//                 <div>
+//                   <label className="block text-sm font-medium">Bank account / IFSC</label>
+//                   <input value={bankAcc} onChange={(e) => setBankAcc(e.target.value)} placeholder="Account no / IFSC" className="w-full p-2 border rounded" />
+//                 </div>
+//               )}
+
+//               {/* Notes */}
+//               <div>
+//                 <label className="block text-sm font-medium">Notes (optional)</label>
+//                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full p-2 border rounded" rows={3} placeholder="Payment details, reference, remarks..." />
+//               </div>
+
+//               {/* Buttons */}
+//               <div className="flex gap-2">
+//                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
+//                   {editingId ? "Update Voucher" : "Save Voucher"}
+//                 </button>
+//                 <button
+//                   type="button"
+//                   onClick={() => {
+//                     setShowForm(false);
+//                     resetForm();
+//                   }}
+//                   className="px-4 py-2 border rounded"
+//                 >
+//                   Cancel
+//                 </button>
+//               </div>
+//             </form>
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default Voucher;
+
+
+// import React from 'react'
+// import { useState } from 'react'
+// import { PlusCircle } from 'lucide-react'
+// import { s } from 'framer-motion/m'
+// const Voucher = () => {
+//   const [Open, setOpen] = useState(false)
+//    return (
+//     <div>
+//       {/* First div  */}
+// <div className='flex iteam-center justify-between'>
+//   <h1 className='font-bold  text-2xl'>Voucher Details</h1>
+// <button onClick={()=>{setOpen(!Open)}} className='border-2 px-2 py-2 flex gap-2 font-bold bg-blue-400 rounded-lg text-white'> <PlusCircle className='w-8'/>Add Voucher </button>
+// </div>
+// {/* Second div start */}
+// <div>
+
+//   {/* Buttons */}
+//   <div  className='flex gap-5 font-semibold'>
+// <button>All</button>
+// <button>Voucher</button>
+// <button>Labour</button>
+// <button>Supplier</button>
+// </div>
+
+// {Open&&(
+//     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+//        <div className="bg-white p-6 rounded-lg shadow-lg w-3/4 max-w-2xl">
+// <table className='border w-full mt-[10px] ' >
+//   <thead className='border'>
+// <th className='border'>ID</th>
+// <th className='border' >Type</th>
+// <th className='border' >Party</th>
+// <th className='border' >Amount</th>
+// <th className='border' >Date</th>
+// <th className='border' >Method</th>
+// <th className='border' >UPI/Bank</th>
+// <th className='border' >Notes</th>
+// <th className='border' >Edit</th>
+// <th className='border' >Delet</th>
+// </thead>
+
+// <tbody className='text-center'>
+// <tr>
+//   <td  className='border'>none</td>
+//   <td  className='border'>none</td>
+//   <td  className='border'>none</td>
+//   <td  className='border'>none</td>
+//   <td  className='border'>none</td>
+//   <td  className='border'>none</td>
+//   <td  className='border'>none</td>
+//   <td  className='border'>none</td>
+//   <td  className='border'>none</td>
+//   <td  className='border'>none</td>
+//    </tr>
+// </tbody>
+// </table>
+
+// <button  onClick={()=>{setOpen(false)}}  className='border-2 mt-4 bg-blue-400 rounded-xl font-semibold px-2 py-2 '>Close</button>
+
+// </div>
+// </div>
+// )}
+// </div>
+// </div>
+//   )
+// }
+
+
+// export default Voucher
+
+
+
+// import { PlusCircle } from 'lucide-react'
+// import { s } from 'framer-motion/m'
+// import { useState } from 'react'
+// const Voucher = () => {
+//   const [open , setopen] = useState(false)
+  
+//    return (
+//     <div>
+//       {/* First div  */}
+// <div className='flex iteam-center justify-between'>
+//   <h1 className='font-bold  text-2xl'>Voucher Details</h1>
+// <button  onClick={()=>{setopen(!open)}} className='border-2 px-2 py-2 flex gap-2 font-bold bg-blue-400 rounded-lg text-white'> <PlusCircle className='w-8'/>Add Voucher </button>
+// </div>
+// {/* Second div start */}
+// <div>
+
+//   {/* Buttons */}
+//   <div  className='flex gap-5 font-semibold'>
+// <button>All</button>
+// <button>Voucher</button>
+// <button>Labour</button>
+// <button>Supplier</button>
+// </div>
+
+// {open&&(
+// <div className='text-center '>
+// <h4>Material</h4>
+
+//  <input className='mt-[10px] rounded-lg' type='text' placeholder='Enter ID'/><br/>
+// <input className='mt-[10px] rounded-lg' type='text' placeholder='Enter Type'/><br/>
+// <input className='mt-[10px] rounded-lg' type='text' placeholder='Enter Party'/><br/>
+// <input className='mt-[10px] rounded-lg' type='text' placeholder='Enter Amount'/><br/>
+// <input className='mt-[10px] rounded-lg' type='text' placeholder='Enter Date'/><br/>
+// <input className='mt-[10px] rounded-lg' type='text' placeholder='Enter Method'/><br/>
+// <input className='mt-[10px] rounded-lg' type='text' placeholder='Enter '/><br/>
+// <input className='mt-[10px] rounded-lg' type='text' placeholder='Enter ID'/><br/>
+
+
+
+
+// </div>
+    
+// )}  
+// </div>
+// </div>
+
+//   )
+// }
+
+
+// export default Voucher
+
+// Real as a biggner level
+import React, { useState, useEffect } from "react";
+import { Edit,Trash } from "lucide-react";
 const Voucher = () => {
-  const [vouchers, setVouchers] = useState([]);
-  const [vendors, setVendors] = useState([]);
-  const [labour, setLabour] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingVoucher, setEditingVoucher] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [voucherToDelete, setVoucherToDelete] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [partyTypeFilter, setPartyTypeFilter] = useState('');
-
-  useEffect(() => {
-    fetchAllParties();
-    fetchVouchers();
-  }, []);
-
-  const fetchAllParties = async () => {
-    try {
-      const [vendorsRes, labourRes, suppliersRes] = await Promise.all([
-        supabase.from('vendors').select('id, name, balance').order('name'),
-        supabase.from('labour').select('id, name, balance').order('name'),
-        supabase.from('suppliers').select('id, name, balance').order('name'),
-      ]);
-
-      if (vendorsRes.error) throw vendorsRes.error;
-      if (labourRes.error) throw labourRes.error;
-      if (suppliersRes.error) throw suppliersRes.error;
-
-      setVendors(vendorsRes.data || []);
-      setLabour(labourRes.data || []);
-      setSuppliers(suppliersRes.data || []);
-    } catch (error) {
-      console.error('Error fetching parties:', error);
-      toast.error('Failed to load party lists');
-    }
-  };
-
-  const fetchVouchers = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('vouchers')
-        .select('*')
-        .order('voucher_date', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setVouchers(data || []);
-    } catch (error) {
-      console.error('Error fetching vouchers:', error);
-      toast.error('Failed to load vouchers');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveVoucher = async (voucherData) => {
-    try {
-      if (editingVoucher) {
-        const { error } = await supabase
-          .from('vouchers')
-          .update(voucherData)
-          .eq('id', editingVoucher.id);
-
-        if (error) throw error;
-        toast.success('Voucher updated successfully!');
-      } else {
-        const { data: newVoucher, error: voucherError } = await supabase
-          .from('vouchers')
-          .insert([voucherData])
-          .select()
-          .single();
-
-        if (voucherError) throw voucherError;
-
-        let ledgerTable = '';
-        let partyIdField = '';
-        let partyName = '';
-
-        switch (newVoucher.party_type) {
-          case 'vendor':
-            ledgerTable = 'vendor_ledger_entries';
-            partyIdField = 'vendor_id';
-            partyName = vendors.find((v) => v.id === newVoucher.party_id)?.name || '';
-            break;
-          case 'labour':
-            ledgerTable = 'labour_ledger_entries';
-            partyIdField = 'labour_id';
-            partyName = labour.find((l) => l.id === newVoucher.party_id)?.name || '';
-            break;
-          case 'supplier':
-            ledgerTable = 'supplier_ledger_entries';
-            partyIdField = 'supplier_id';
-            partyName = suppliers.find((s) => s.id === newVoucher.party_id)?.name || '';
-            break;
-          default:
-            throw new Error('Invalid party type');
-        }
-
-        const { error: ledgerError } = await supabase.from(ledgerTable).insert([
-          {
-            [partyIdField]: newVoucher.party_id,
-            entry_type: 'credit',
-            amount: newVoucher.amount,
-            entry_date: newVoucher.voucher_date,
-            reference_type: 'voucher',
-            reference_id: newVoucher.id,
-            reference_no: newVoucher.voucher_no || `VOU-${newVoucher.id}`,
-            notes: `Payment made - ${newVoucher.payment_method} ${newVoucher.reference_no ? `(Ref: ${newVoucher.reference_no})` : ''}`,
-          },
-        ]);
-
-        if (ledgerError) throw ledgerError;
-
-        toast.success(`Voucher created successfully! Ledger entry added for ${partyName}.`);
-      }
-
-      setIsModalOpen(false);
-      setEditingVoucher(null);
-      fetchVouchers();
-      fetchAllParties();
-    } catch (error) {
-      console.error('Error saving voucher:', error);
-      toast.error('Failed to save voucher');
-    }
-  };
-
-  const handleDeleteVoucher = async () => {
-    try {
-      const { error } = await supabase
-        .from('vouchers')
-        .delete()
-        .eq('id', voucherToDelete.id);
-
-      if (error) throw error;
-
-      toast.success('Voucher deleted successfully.');
-      setIsDeleteModalOpen(false);
-      setVoucherToDelete(null);
-      fetchVouchers();
-    } catch (error) {
-      console.error('Error deleting voucher:', error);
-      toast.error('Failed to delete voucher. It may be referenced in ledger entries.');
-    }
-  };
-
-  const getPartyName = (voucher) => {
-    switch (voucher.party_type) {
-      case 'vendor':
-        return vendors.find((v) => v.id === voucher.party_id)?.name || '-';
-      case 'labour':
-        return labour.find((l) => l.id === voucher.party_id)?.name || '-';
-      case 'supplier':
-        return suppliers.find((s) => s.id === voucher.party_id)?.name || '-';
-      default:
-        return '-';
-    }
-  };
-
-  const exportToCSV = () => {
-    const headers = ['Voucher No', 'Date', 'Party Type', 'Party Name', 'Amount', 'Payment Method', 'Reference', 'Notes'];
-    const csvContent = [
-      headers.join(','),
-      ...filteredVouchers.map((v) =>
-        [
-          v.voucher_no || `VOU-${v.id}`,
-          v.voucher_date,
-          v.party_type,
-          getPartyName(v),
-          v.amount,
-          v.payment_method,
-          v.reference_no || '-',
-          v.notes || '-',
-        ].join(',')
-      ),
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `vouchers_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    toast.success('Vouchers exported to CSV');
-  };
-
-  const handlePrint = () => {
-    window.print();
-    toast.success('Print dialog opened');
-  };
-
-  const filteredVouchers = vouchers.filter((v) => {
-    const partyName = getPartyName(v);
-    const matchesSearch =
-      v.voucher_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      partyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.payment_method?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = !partyTypeFilter || v.party_type === partyTypeFilter;
-    return matchesSearch && matchesType;
+  // --- State ---
+  const [vouchers, setVouchers] = useState(() => {
+    const saved = localStorage.getItem("vouchers");
+    return saved ? JSON.parse(saved) : [];
   });
 
-  if (loading) {
-    return (
-      <Card>
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-red"></div>
-          <span className="ml-3 text-gray-600 dark:text-dark-text-secondary">Loading vouchers...</span>
-        </div>
-      </Card>
-    );
-  }
+  const [activeTab, setActiveTab] = useState("All");
+  const [showForm, setShowForm] = useState(false);
+
+  // Form states
+  const [id, setId] = useState(null); // edit mode
+  const [type, setType] = useState("Vendor");
+  const [party, setParty] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [method, setMethod] = useState("UPI");
+  const [upi, setUpi] = useState("");
+  const [bankAcc, setBankAcc] = useState("");
+  const [notes, setNotes] = useState("");
+
+  // --- Save to localStorage ---
+  useEffect(() => {
+    localStorage.setItem("vouchers", JSON.stringify(vouchers));
+  }, [vouchers]);
+
+  // --- Reset form ---
+  const resetForm = () => {
+    setId(null);
+    setType("Vendor");
+    setParty("");
+    setAmount("");
+    setDate(new Date().toISOString().split("T")[0]);
+    setMethod("UPI");
+    setUpi("");
+    setBankAcc("");
+    setNotes("");
+  };
+
+  // --- Add / Update ---
+  const handleSave = (e) => {
+    e.preventDefault();
+    if (!party || !amount) return alert("Please fill required fields!");
+
+    const voucherObj = {
+      id: id || Date.now(),
+      type,
+      party,
+      amount: Number(amount),
+      date,
+      method,
+      upi: method === "UPI" ? upi : "",
+      bankAcc: method === "Bank" ? bankAcc : "",
+      notes,
+    };
+
+    if (id) {
+      // update
+      setVouchers(vouchers.map((v) => (v.id === id ? voucherObj : v)));
+    } else {
+      // add
+      setVouchers([...vouchers, voucherObj]);
+    }
+
+    resetForm();
+    setShowForm(false);
+  };
+
+  // --- Edit ---
+  const handleEdit = (v) => {
+    setId(v.id);
+    setType(v.type);
+    setParty(v.party);
+    setAmount(v.amount);
+    setDate(v.date);
+    setMethod(v.method);
+    setUpi(v.upi);
+    setBankAcc(v.bankAcc);
+    setNotes(v.notes);
+    setShowForm(true);
+  };
+
+  // --- Delete ---
+  const handleDelete = (id) => {
+    setVouchers(vouchers.filter((v) => v.id !== id));
+  };
+
+  // --- Filter by Tab ---
+  const filteredVouchers =
+    activeTab === "All" ? vouchers : vouchers.filter((v) => v.type === activeTab);
 
   return (
-    <div>
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingVoucher(null);
-        }}
-        title={editingVoucher ? 'Edit Voucher' : 'New Payment Voucher'}
-      >
-        <VoucherForm
-          voucher={editingVoucher}
-          vendors={vendors}
-          labour={labour}
-          suppliers={suppliers}
-          onSave={handleSaveVoucher}
-          onCancel={() => {
-            setIsModalOpen(false);
-            setEditingVoucher(null);
+    <div className="p-6 space-y-4">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">Vouchers</h2>
+        <button
+          onClick={() => {
+            resetForm();
+            setShowForm(true);
           }}
-        />
-      </Modal>
+          className="px-4 py-2 bg-green-600 text-white rounded"
+        >
+          + New Voucher
+        </button>
+      </div>
 
-      <ConfirmModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={handleDeleteVoucher}
-        title="Delete Voucher"
-        message={`Are you sure you want to delete voucher "${voucherToDelete?.voucher_no || `VOU-${voucherToDelete?.id}`}"? This will also affect related ledger entries.`}
-      />
-
-      <Card>
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-dark-text">Payment Vouchers</h3>
-          <Button
-            onClick={() => {
-              if (vendors.length === 0 && labour.length === 0 && suppliers.length === 0) {
-                toast.error('Please add vendors, labour, or suppliers first');
-                return;
-              }
-              setIsModalOpen(true);
-            }}
+      {/* Tabs */}
+      <div className="flex gap-2">
+        {["All", "Vendor", "Labour", "Supplier"].map((t) => (
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            className={`px-3 py-1 rounded ${
+              activeTab === t ? "bg-red-500 text-white" : "bg-gray-200"
+            }`}
           >
-            <PlusCircle className="h-4 w-4 mr-2" />
-            New Voucher
-          </Button>
-        </div>
+            {t}
+          </button>
+        ))}
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="relative md:col-span-2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by voucher no, party name, or payment method..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-            />
-          </div>
-
-          <select
-            value={partyTypeFilter}
-            onChange={(e) => setPartyTypeFilter(e.target.value)}
-            className="p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
-          >
-            <option value="">All Party Types</option>
-            <option value="vendor">Vendor</option>
-            <option value="labour">Labour</option>
-            <option value="supplier">Supplier</option>
-          </select>
-        </div>
-
-        <div className="flex items-center justify-end space-x-2 mb-4">
-          <Button variant="secondary" onClick={exportToCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-          <Button variant="secondary" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </Button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-700 text-left">
-              <tr>
-                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Voucher No</th>
-                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Date</th>
-                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Type</th>
-                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Party Name</th>
-                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Amount</th>
-                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Method</th>
-                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Reference</th>
-                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredVouchers.length > 0 ? (
-                filteredVouchers.map((voucher) => (
-                  <tr
-                    key={voucher.id}
-                    className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                  >
-                    <td className="p-3 font-medium text-gray-900 dark:text-dark-text">
-                      {voucher.voucher_no || `VOU-${voucher.id}`}
-                    </td>
-                    <td className="p-3 text-gray-700 dark:text-dark-text-secondary">
-                      {new Date(voucher.voucher_date).toLocaleDateString('en-IN')}
-                    </td>
-                    <td className="p-3">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          voucher.party_type === 'vendor'
-                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                            : voucher.party_type === 'labour'
-                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                        }`}
-                      >
-                        {voucher.party_type?.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="p-3 text-gray-700 dark:text-dark-text-secondary">{getPartyName(voucher)}</td>
-                    <td className="p-3 text-right font-medium text-red-600 dark:text-red-400">
-                      ₹{parseFloat(voucher.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="p-3 text-gray-700 dark:text-dark-text-secondary capitalize">
-                      {voucher.payment_method}
-                    </td>
-                    <td className="p-3 text-gray-700 dark:text-dark-text-secondary text-sm">
-                      {voucher.reference_no || '-'}
-                    </td>
-                    <td className="p-3 text-right">
-                      <div className="flex justify-end items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          className="p-2 h-auto"
-                          onClick={() => {
-                            setEditingVoucher(voucher);
-                            setIsModalOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          className="p-2 h-auto"
-                          onClick={() => {
-                            setVoucherToDelete(voucher);
-                            setIsDeleteModalOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="8" className="text-center p-12">
-                    <div className="flex flex-col items-center text-gray-500 dark:text-dark-text-secondary">
-                      <Receipt className="h-12 w-12 mb-3 text-gray-400" />
-                      <p className="text-lg font-medium">No vouchers found</p>
-                      <p className="text-sm mt-1">
-                        {searchTerm || partyTypeFilter
-                          ? 'Try adjusting your filters'
-                          : 'Create your first payment voucher to get started'}
-                      </p>
-                    </div>
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full border">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border p-2">Type</th>
+              <th className="border p-2">Party</th>
+              <th className="border p-2">Amount</th>
+              <th className="border p-2">Date</th>
+              <th className="border p-2">Method</th>
+              <th className="border p-2">Details</th>
+              <th className="border p-2">Notes</th>
+              <th className="border p-2">Edit</th>
+               <th className="border p-2">Delet</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredVouchers.map((v) => (
+              <tr key={v.id} className="text-center">
+                <td className="border p-2">{v.type}</td>
+                <td className="border p-2">{v.party}</td>
+                <td className="border p-2">₹{v.amount}</td>
+                <td className="border p-2">{v.date}</td>
+                <td className="border p-2">{v.method}</td>
+                <td className="border p-2">
+                  {v.method === "UPI" ? v.upi : v.method === "Bank" ? v.bankAcc : "-"}
+                </td>
+                <td className="border p-2">{v.notes || "-"}</td>
+                <td className="border p-2 space-x-2">
+                  <button onClick={() => handleEdit(v)} className="px-2 py-1 text-yellow-500 rounded">
+                    <Edit/>
+                  </button>
                   </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                   <td className="border p-2 space-x-2">
+                  <button onClick={() => handleDelete(v.id)} className="px-2 py-1  text-red-500 rounded">
+                    <Trash/>
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {filteredVouchers.length === 0 && (
+              <tr>
+                <td colSpan="8" className="text-gray-500 p-4">No vouchers</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-        {filteredVouchers.length > 0 && (
-          <div className="mt-4 text-sm text-gray-600 dark:text-dark-text-secondary">
-            Showing {filteredVouchers.length} of {vouchers.length} voucher(s)
+      {/* Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded w-96 space-y-3">
+            <h3 className="text-lg font-bold">{id ? "Edit Voucher" : "New Voucher"}</h3>
+
+            <form onSubmit={handleSave} className="space-y-3">
+              <select value={type} onChange={(e) => setType(e.target.value)} className="w-full p-2 border rounded">
+                <option>Vendor</option>
+                <option>Labour</option>
+                <option>Supplier</option>
+              </select>
+                    
+                    {/* pura code  */}
+              {/* <input value={party}
+               onChange={(e) => setParty(e.target.value)}
+                placeholder="Party Name"
+                 className="w-full p-2 border rounded" /> */}
+
+                 <input
+                 list="party-list"
+                 value={party}
+                 onChange={(e) => setParty(e.target.value)}
+                 placeholder="Party Name"
+                 className="w-full p-2 border rounded"
+                        />
+
+               <datalist id="party-list">
+                 <option value="Supplier A" />
+                 <option value="Supplier B" />
+                 <option value="Supplier C" />
+                 <option value="Local Vendor" />
+               </datalist>
+
+
+
+
+              <input type="number"
+               value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                 placeholder="Amount"
+                  className="w-full p-2 border rounded" />
+
+              <input type="date" value={date}
+               onChange={(e) => setDate(e.target.value)} 
+               className="w-full p-2 border rounded" />
+
+              <select value={method} 
+              onChange={(e) => setMethod(e.target.value)}
+               className="w-full p-2 border rounded">
+                <option>UPI</option>
+                <option>Bank</option>
+                <option>Cash</option>
+                <option>Manual</option>
+              </select>
+
+              {method === "UPI" && (
+                <input value={upi} 
+                onChange={(e) => setUpi(e.target.value)} 
+                placeholder="UPI ID" 
+                className="w-full p-2 border rounded" />
+              )}
+
+              {method === "Bank" && (
+                <input value={bankAcc} onChange={(e) => setBankAcc(e.target.value)} placeholder="Bank Account / IFSC" className="w-full p-2 border rounded" />
+              )}
+
+              <textarea value={notes} 
+              onChange={(e) => setNotes(e.target.value)} 
+              placeholder="Notes"
+               className="w-full p-2 border rounded" />
+
+              <div className="flex gap-2">
+                <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded">
+                  {id ? "Update" : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForm(false);
+                    resetForm();
+                  }}
+                  className="flex-1 border py-2 rounded"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </Card>
+        </div>
+      )}
     </div>
   );
 };
