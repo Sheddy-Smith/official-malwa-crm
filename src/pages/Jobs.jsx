@@ -1,36 +1,23 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { ClipboardList, FileSpreadsheet, Wrench, PackageCheck, ReceiptText, ArrowRight, ArrowLeft, Plus, Eye, Search } from 'lucide-react';
+import { Plus, Search, Eye } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import TabbedPage from '@/components/TabbedPage';
 import InspectionStep from './jobs/InspectionStep';
 import EstimateStep from './jobs/EstimateStep';
 import JobSheetStep from './jobs/JobSheetStep';
-import ChalanStep from './jobs/ChalanStep';
-import InvoiceStep from './jobs/InvoiceStep';
 import useJobsStore from '@/store/jobsStore';
 import useCustomerStore from '@/store/customerStore';
-import { motion } from 'framer-motion';
-
-const steps = [
-  { id: 'inspection', name: 'Vehicle Inspection', icon: ClipboardList, component: InspectionStep },
-  { id: 'estimate', name: 'Estimate', icon: FileSpreadsheet, component: EstimateStep },
-  { id: 'jobsheet', name: 'Job Sheet', icon: Wrench, component: JobSheetStep },
-  { id: 'chalan', name: 'Challan', icon: PackageCheck, component: ChalanStep },
-  { id: 'invoice', name: 'Invoice', icon: ReceiptText, component: InvoiceStep },
-];
 
 const statusColors = {
   inspection: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
   estimate: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  jobsheet: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-  chalan: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  jobsheet: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
 };
 
 const Jobs = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [selectedJob, setSelectedJob] = useState(null);
   const [showNewJobModal, setShowNewJobModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -49,20 +36,10 @@ const Jobs = () => {
   const customers = useCustomerStore(state => state.customers);
   const fetchCustomers = useCustomerStore(state => state.fetchCustomers);
 
-  const jobId = searchParams.get('jobId');
-  const stepParam = searchParams.get('step');
-
   useEffect(() => {
     fetchJobs();
     fetchCustomers();
   }, []);
-
-  useEffect(() => {
-    if (stepParam) {
-      const stepIndex = steps.findIndex(s => s.id === stepParam);
-      setCurrentStep(stepIndex >= 0 ? stepIndex : 0);
-    }
-  }, [stepParam]);
 
   const handleCreateJob = async () => {
     if (!newJobData.vehicleNo || !newJobData.ownerName) {
@@ -80,24 +57,12 @@ const Jobs = () => {
         branch: 'Head Office',
         inspectionDate: new Date().toISOString().split('T')[0]
       });
-      setSearchParams({ jobId: result.id, step: 'inspection' });
+      setSelectedJob(result);
     }
   };
 
-  const navigateToStep = (index) => {
-    setSearchParams({ jobId, step: steps[index].id });
-  };
-
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) navigateToStep(currentStep + 1);
-  };
-
-  const handlePrev = () => {
-    if (currentStep > 0) navigateToStep(currentStep - 1);
-  };
-
   const handleBackToList = () => {
-    setSearchParams({});
+    setSelectedJob(null);
     fetchJobs();
   };
 
@@ -112,103 +77,42 @@ const Jobs = () => {
     return matchesSearch && matchesStatus;
   });
 
-  if (jobId) {
-    const ActiveComponent = steps[currentStep].component;
+  if (selectedJob) {
+    const tabs = [
+      {
+        id: 'inspection',
+        label: 'Inspection',
+        component: <InspectionStep jobId={selectedJob.id} onBack={handleBackToList} />
+      },
+      {
+        id: 'estimate',
+        label: 'Estimate',
+        component: <EstimateStep jobId={selectedJob.id} onBack={handleBackToList} />
+      },
+      {
+        id: 'jobsheet',
+        label: 'Job Sheet',
+        component: <JobSheetStep jobId={selectedJob.id} onBack={handleBackToList} />
+      }
+    ];
 
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="space-y-6"
-      >
-        <div className="flex items-center justify-between">
-          <Button onClick={handleBackToList} variant="secondary">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Jobs List
-          </Button>
-          <div className="text-sm text-gray-500 dark:text-dark-text-secondary">
-            Step {currentStep + 1} of {steps.length}
-          </div>
-        </div>
-
-        <Card className="p-6">
-          <div className="border-b dark:border-gray-700 pb-6 mb-6">
-            <nav aria-label="Progress">
-              <ol role="list" className="space-y-4 md:flex md:space-x-8 md:space-y-0">
-                {steps.map((step, stepIdx) => (
-                  <li key={step.name} className="md:flex-1">
-                    <div onClick={() => navigateToStep(stepIdx)} className="group flex items-center cursor-pointer relative">
-                      <div className="flex items-center">
-                        <motion.div
-                          animate={{ scale: stepIdx === currentStep ? 1.1 : 1 }}
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors duration-200 ${
-                            stepIdx <= currentStep
-                              ? 'bg-brand-red text-white'
-                              : 'border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-dark-card text-gray-500 dark:text-dark-text-secondary'
-                          }`}
-                        >
-                          <step.icon className="h-6 w-6" />
-                        </motion.div>
-                        <div className="ml-4 text-left">
-                          <div
-                            className={`text-sm font-medium ${
-                              stepIdx <= currentStep
-                                ? 'text-brand-dark dark:text-dark-text'
-                                : 'text-gray-500 dark:text-dark-text-secondary'
-                            }`}
-                          >
-                            {step.name}
-                          </div>
-                        </div>
-                      </div>
-                      {stepIdx < steps.length - 1 && (
-                        <div className="hidden md:block absolute top-5 left-14 w-[calc(100%-3.5rem)] h-0.5 bg-gray-200 dark:bg-gray-700">
-                          <div
-                            className={`h-full transition-colors duration-200 ${
-                              stepIdx < currentStep ? 'bg-brand-red' : 'bg-transparent'
-                            }`}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </nav>
-          </div>
-
-          <div className="min-h-[400px]">
-            <ActiveComponent jobId={jobId} />
-          </div>
-
-          <div className="flex justify-between border-t dark:border-gray-700 pt-4 mt-6">
-            <Button onClick={handlePrev} disabled={currentStep === 0} variant="secondary">
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              Previous
-            </Button>
-            <Button onClick={handleNext} disabled={currentStep === steps.length - 1}>
-              Next
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-          </div>
-        </Card>
-      </motion.div>
+      <TabbedPage
+        title={`Job: ${selectedJob.job_no}`}
+        tabs={tabs}
+        onBack={handleBackToList}
+      />
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-text">Jobs</h2>
             <p className="text-sm text-gray-500 dark:text-dark-text-secondary mt-1">
-              Manage vehicle inspection, estimates, and invoices
+              Manage vehicle inspection, estimates, and job sheets
             </p>
           </div>
           <Button onClick={() => setShowNewJobModal(true)}>
@@ -238,7 +142,6 @@ const Jobs = () => {
               <option value="inspection">Inspection</option>
               <option value="estimate">Estimate</option>
               <option value="jobsheet">Job Sheet</option>
-              <option value="chalan">Challan</option>
               <option value="completed">Completed</option>
             </select>
           </div>
@@ -248,14 +151,11 @@ const Jobs = () => {
           <div className="text-center py-12 text-gray-500 dark:text-dark-text-secondary">Loading jobs...</div>
         ) : filteredJobs.length === 0 ? (
           <div className="text-center py-12">
-            <ClipboardList className="mx-auto h-16 w-16 text-gray-400 dark:text-gray-600 mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-text mb-2">
               {jobs.length === 0 ? 'No Jobs Yet' : 'No matching jobs found'}
             </h3>
             <p className="text-gray-500 dark:text-dark-text-secondary mb-6">
-              {jobs.length === 0
-                ? 'Create your first job to get started'
-                : 'Try adjusting your search or filters'}
+              {jobs.length === 0 ? 'Create your first job to get started' : 'Try adjusting your search or filters'}
             </p>
             {jobs.length === 0 && (
               <Button onClick={() => setShowNewJobModal(true)}>
@@ -274,7 +174,6 @@ const Jobs = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase tracking-wider">Vehicle No</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase tracking-wider">Job Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase tracking-wider">Total Amount</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -290,13 +189,10 @@ const Jobs = () => {
                         {job.status?.charAt(0).toUpperCase() + job.status?.slice(1)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-dark-text">
-                      �{parseFloat(job.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Button size="sm" onClick={() => setSearchParams({ jobId: job.id, step: job.status || 'inspection' })}>
+                      <Button size="sm" onClick={() => setSelectedJob(job)}>
                         <Eye className="h-4 w-4 mr-1" />
-                        View/Edit
+                        View
                       </Button>
                     </td>
                   </tr>
@@ -309,11 +205,7 @@ const Jobs = () => {
 
       {showNewJobModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-dark-card rounded-xl p-6 max-w-md w-full shadow-xl"
-          >
+          <div className="bg-white dark:bg-dark-card rounded-xl p-6 max-w-md w-full shadow-xl">
             <h3 className="text-xl font-bold text-gray-900 dark:text-dark-text mb-4">Create New Job</h3>
 
             <div className="space-y-4">
@@ -352,10 +244,10 @@ const Jobs = () => {
                 <Button onClick={() => setShowNewJobModal(false)} variant="secondary" className="flex-1">Cancel</Button>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 };
 
