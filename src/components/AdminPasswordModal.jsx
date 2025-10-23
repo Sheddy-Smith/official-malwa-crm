@@ -2,12 +2,13 @@ import { useState } from "react";
 import Modal from "./ui/Modal";
 import Button from "./ui/Button";
 import { Lock } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import useAuthStore from "@/store/authStore";
 
 const AdminPasswordModal = ({ isOpen, onSuccess, onCancel }) => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const user = useAuthStore((state) => state.user);
 
   const handleVerify = async () => {
     if (!password.trim()) {
@@ -18,20 +19,22 @@ const AdminPasswordModal = ({ isOpen, onSuccess, onCancel }) => {
     setLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
       if (!user) {
         toast.error("User not authenticated");
         setLoading(false);
         return;
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: password
-      });
+      const validCredentials = [
+        { email: 'malwatrolley@gmail.com', password: 'Malwa822' },
+        { email: 'SheddySmith822@gmail.com', password: 'S#d_8224' }
+      ];
 
-      if (error) {
+      const isValid = validCredentials.some(
+        cred => cred.email === user.email && cred.password === password
+      );
+
+      if (!isValid) {
         toast.error("Invalid password");
         setLoading(false);
         return;
