@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
 
 const useJobsStore = create((set, get) => ({
   jobs: [],
@@ -96,10 +97,12 @@ const useJobsStore = create((set, get) => ({
         loading: false
       }));
 
+      toast.success('Job created successfully');
       return data;
     } catch (error) {
       set({ error: error.message, loading: false });
       console.error('Error creating job:', error);
+      toast.error('Failed to create job');
       return null;
     }
   },
@@ -121,10 +124,12 @@ const useJobsStore = create((set, get) => ({
         loading: false
       }));
 
+      toast.success('Job updated successfully');
       return data;
     } catch (error) {
       set({ error: error.message, loading: false });
       console.error('Error updating job:', error);
+      toast.error('Failed to update job');
       return null;
     }
   },
@@ -207,10 +212,12 @@ const useJobsStore = create((set, get) => ({
       });
 
       set({ loading: false });
+      toast.success('Job sheet finalized successfully');
       return true;
     } catch (error) {
       set({ error: error.message, loading: false });
       console.error('Error finalizing job sheet:', error);
+      toast.error('Failed to finalize job sheet');
       return false;
     }
   },
@@ -284,10 +291,12 @@ const useJobsStore = create((set, get) => ({
       });
 
       set({ loading: false });
+      toast.success('Invoice created successfully');
       return invoice;
     } catch (error) {
       set({ error: error.message, loading: false });
       console.error('Error creating invoice:', error);
+      toast.error('Failed to create invoice');
       return null;
     }
   },
@@ -307,10 +316,12 @@ const useJobsStore = create((set, get) => ({
         loading: false
       }));
 
+      toast.success('Job deleted successfully');
       return true;
     } catch (error) {
       set({ error: error.message, loading: false });
       console.error('Error deleting job:', error);
+      toast.error('Failed to delete job');
       return false;
     }
   },
