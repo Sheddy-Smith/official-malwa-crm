@@ -1,0 +1,126 @@
+import { useState, useEffect } from 'react';
+import { Download, Printer } from 'lucide-react';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import useJobsStore from '@/store/jobsStore';
+import jsPDF from 'jspdf';
+
+const ChalanStep = ({ jobId }) => {
+  const [job, setJob] = useState(null);
+  const fetchJobById = useJobsStore(state => state.fetchJobById);
+  const updateChalanData = useJobsStore(state => state.updateChalanData);
+
+  useEffect(() => {
+    loadJob();
+  }, [jobId]);
+
+  const loadJob = async () => {
+    const jobData = await fetchJobById(jobId);
+    if (jobData) setJob(jobData);
+  };
+
+  const handleSaveChallan = async () => {
+    const chalanData = {
+      items: job.jobsheet_data?.items || [],
+      extraWork: job.jobsheet_data?.extraWork || [],
+      generatedAt: new Date().toISOString()
+    };
+    await updateChalanData(jobId, chalanData);
+    alert('Challan saved successfully!');
+  };
+
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text('DELIVERY CHALLAN', 105, 20, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text(`Job No: ${job.job_no}`, 20, 40);
+    doc.text(`Vehicle: ${job.vehicle_no}`, 20, 47);
+    doc.text(`Owner: ${job.owner_name}`, 20, 54);
+    doc.text(`Date: ${new Date(job.job_date).toLocaleDateString('en-IN')}`, 20, 61);
+    doc.save(`Challan-${job.job_no}.pdf`);
+  };
+
+  if (!job) return <div className="text-center py-12 text-gray-500 dark:text-dark-text-secondary">Loading challan...</div>;
+
+  const items = job.jobsheet_data?.items || [];
+  const extraWork = job.jobsheet_data?.extraWork || [];
+  const inspectionSubtotal = items.reduce((sum, item) => sum + (parseFloat(item.cost || 0) * parseFloat(item.multiplier || 1)), 0);
+  const extraWorkSubtotal = extraWork.reduce((sum, work) => sum + (parseFloat(work.cost || 0) * parseFloat(work.multiplier || 1)), 0);
+  const estimateDiscount = parseFloat(job.estimate_data?.discount || 0);
+  const grandTotal = inspectionSubtotal + extraWorkSubtotal - estimateDiscount;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-text">Delivery Challan</h2>
+          <p className="text-sm text-gray-500 dark:text-dark-text-secondary mt-1">Status: <span className="text-orange-600 dark:text-orange-400 font-medium">Ready for Delivery</span></p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={handleSaveChallan} size="sm"><Download className="h-4 w-4 mr-2" />Save Challan</Button>
+          <Button onClick={generatePDF} variant="secondary" size="sm"><Download className="h-4 w-4 mr-2" />PDF</Button>
+          <Button onClick={() => window.print()} variant="secondary" size="sm"><Printer className="h-4 w-4 mr-2" />Print</Button>
+        </div>
+      </div>
+
+      <Card className="p-6">
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div><span className="text-gray-500 dark:text-dark-text-secondary">Job No:</span><p className="font-medium text-gray-900 dark:text-dark-text">{job.job_no}</p></div>
+            <div><span className="text-gray-500 dark:text-dark-text-secondary">Vehicle:</span><p className="font-medium text-gray-900 dark:text-dark-text">{job.vehicle_no}</p></div>
+            <div><span className="text-gray-500 dark:text-dark-text-secondary">Owner:</span><p className="font-medium text-gray-900 dark:text-dark-text">{job.owner_name}</p></div>
+            <div><span className="text-gray-500 dark:text-dark-text-secondary">Date:</span><p className="font-medium text-gray-900 dark:text-dark-text">{new Date(job.job_date).toLocaleDateString('en-IN')}</p></div>
+          </div>
+        </div>
+
+        <h4 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Estimate Items</h4>
+        <div className="overflow-x-auto mb-6">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                {['Category', 'Item', 'Cost (₹)', 'Total (₹)', 'Work By', 'Notes'].map(h => (<th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase">{h}</th>))}
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-dark-card divide-y divide-gray-200 dark:divide-gray-700">
+              {items.map((item) => {
+                const itemTotal = parseFloat(item.cost || 0) * parseFloat(item.multiplier || 1);
+                return (<tr key={item.id}><td className="px-4 py-3 text-sm">{item.category}</td><td className="px-4 py-3 text-sm">{item.item}</td><td className="px-4 py-3 text-sm">₹{parseFloat(item.cost).toLocaleString('en-IN')}</td><td className="px-4 py-3 text-sm font-medium">₹{itemTotal.toLocaleString('en-IN')}</td><td className="px-4 py-3 text-sm">{item.workBy || '-'}</td><td className="px-4 py-3 text-sm text-gray-500">{item.notes || '-'}</td></tr>);
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {extraWork.length > 0 && (
+          <>
+            <h4 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Extra Work</h4>
+            <div className="overflow-x-auto mb-6">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>{['Category', 'Item', 'Cost (₹)', 'Total (₹)', 'Work By', 'Notes'].map(h => (<th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase">{h}</th>))}</tr>
+                </thead>
+                <tbody className="bg-white dark:bg-dark-card divide-y divide-gray-200 dark:divide-gray-700">
+                  {extraWork.map((work) => {
+                    const workTotal = parseFloat(work.cost || 0) * parseFloat(work.multiplier || 1);
+                    return (<tr key={work.id}><td className="px-4 py-3 text-sm">{work.category}</td><td className="px-4 py-3 text-sm">{work.item}</td><td className="px-4 py-3 text-sm">₹{parseFloat(work.cost).toLocaleString('en-IN')}</td><td className="px-4 py-3 text-sm font-medium">₹{workTotal.toLocaleString('en-IN')}</td><td className="px-4 py-3 text-sm">{work.workBy || '-'}</td><td className="px-4 py-3 text-sm text-gray-500">{work.notes || '-'}</td></tr>);
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        <div className="border-t dark:border-gray-700 pt-6">
+          <div className="max-w-md ml-auto space-y-3">
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-dark-text-secondary">Subtotal (Estimate):</span><span className="font-medium">₹{inspectionSubtotal.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-dark-text-secondary">Subtotal (Extra):</span><span className="font-medium">₹{extraWorkSubtotal.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between text-sm text-red-600"><span>Discount:</span><span>- ₹{estimateDiscount.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between text-lg font-bold border-t pt-3"><span>Grand Total:</span><span className="text-brand-red">₹{grandTotal.toLocaleString('en-IN')}</span></div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+export default ChalanStep;
