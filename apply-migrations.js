@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
-const supabaseUrl = 'https://anywqwnkwmlvdctnmhgp.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFueXdxd25rd21sdmRjdG5taGdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExMzIyOTcsImV4cCI6MjA3NjcwODI5N30.fBKdysuSQZ245hdRC9HIrk6keq_JC4ROhN5rW3CGnBU';
+const supabaseUrl = 'https://fyvhgzaqcbqcteucnzxy.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5dmhnemFxY2JxY3RldWNuenh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExOTMwNTAsImV4cCI6MjA3Njc2OTA1MH0.Qpb4kP7OP_tPncG3KGeCz4MLDsIxMF7Tj9vzY_ZSjGA';
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
