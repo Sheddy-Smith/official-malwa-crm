@@ -2,10 +2,10 @@ import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 
 const useLabourStore = create((set, get) => ({
-  labours: [],
+  labour: [],
   loading: false,
 
-  fetchLabours: async () => {
+  fetchLabour: async () => {
     try {
       set({ loading: true });
       const { data, error } = await supabase
@@ -14,7 +14,7 @@ const useLabourStore = create((set, get) => ({
         .order('name', { ascending: true });
 
       if (error) throw error;
-      set({ labours: data || [], loading: false });
+      set({ labour: data || [], loading: false });
     } catch (error) {
       console.error('Error fetching labour:', error);
       set({ loading: false });
@@ -52,7 +52,7 @@ const useLabourStore = create((set, get) => ({
         }]);
       }
 
-      set((state) => ({ labours: [...state.labours, data] }));
+      set((state) => ({ labour: [...state.labour, data] }));
       return data;
     } catch (error) {
       console.error('Error adding labour:', error);
@@ -77,7 +77,7 @@ const useLabourStore = create((set, get) => ({
       if (error) throw error;
 
       set((state) => ({
-        labours: state.labours.map((l) => (l.id === updatedLabour.id ? { ...l, ...updatedLabour } : l)),
+        labour: state.labour.map((l) => (l.id === updatedLabour.id ? { ...l, ...updatedLabour } : l)),
       }));
     } catch (error) {
       console.error('Error updating labour:', error);
@@ -92,7 +92,7 @@ const useLabourStore = create((set, get) => ({
       if (error) throw error;
 
       set((state) => ({
-        labours: state.labours.filter((l) => l.id !== labourId),
+        labour: state.labour.filter((l) => l.id !== labourId),
       }));
     } catch (error) {
       console.error('Error deleting labour:', error);
