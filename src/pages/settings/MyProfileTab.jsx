@@ -120,9 +120,9 @@ const MyProfileTab = () => {
   };
 
   const handleChangePassword = async () => {
-    const { newPassword, confirmPassword } = passwordForm;
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
 
-    if (!newPassword || !confirmPassword) {
+    if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error("All password fields are required");
       return;
     }
@@ -138,18 +138,28 @@ const MyProfileTab = () => {
     }
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: profile.email,
+        password: currentPassword
+      });
+
+      if (signInError) {
+        toast.error("Current password is incorrect");
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       });
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast.success("Password changed successfully");
       setIsPasswordModalOpen(false);
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (error) {
       console.error("Error changing password:", error);
-      toast.error(error.message || "Failed to change password");
+      toast.error("Failed to change password");
     }
   };
 
@@ -288,10 +298,16 @@ const MyProfileTab = () => {
         title="Change Password"
       >
         <div className="space-y-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              You are already authenticated. Just enter your new password.
-            </p>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+              Current Password *
+            </label>
+            <input
+              type="password"
+              value={passwordForm.currentPassword}
+              onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500"
+            />
           </div>
 
           <div>
@@ -302,7 +318,6 @@ const MyProfileTab = () => {
               type="password"
               value={passwordForm.newPassword}
               onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-              placeholder="Enter new password (min 6 characters)"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500"
             />
           </div>
@@ -315,7 +330,6 @@ const MyProfileTab = () => {
               type="password"
               value={passwordForm.confirmPassword}
               onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-              placeholder="Re-enter new password"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500"
             />
           </div>
