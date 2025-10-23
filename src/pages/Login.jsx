@@ -11,8 +11,8 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useAuthStore((state) => state.login);
-  const [email, setEmail] = useState('malwatrolley@gmail.com');
-  const [password, setPassword] = useState('Malwa822');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState('Project Manager');
   const [branch, setBranch] = useState('Head Office');
   const [error, setError] = useState('');
@@ -21,7 +21,13 @@ const Login = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     setError('');
-    const user = { name: 'Demo User', email, role, branch };
+    const directorEmails = ['malwatrolley@gmail.com', 'SheddySmith822@gmail.com'];
+    const user = {
+      name: 'Demo User',
+      email,
+      role: directorEmails.includes(email) ? 'Director' : role,
+      branch
+    };
     const loggedIn = login(user, { email, password });
     if (loggedIn) {
       toast.success('Login Successful!');

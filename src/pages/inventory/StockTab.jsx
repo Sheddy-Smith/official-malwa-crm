@@ -1,625 +1,777 @@
-// //   working code // owner-code-run
-// import { useState } from 'react';
-// import useInventoryStore from '@/store/inventoryStore';
-// import Button from '@/components/ui/Button';
-// import Modal from '@/components/ui/Modal';
-// import { toast } from 'sonner';
-// import { Edit, Trash2, PlusCircle } from 'lucide-react';
-// import ConfirmModal from '@/components/ui/ConfirmModal';
-
-// const StockForm = ({ item, onSave, onCancel  }) => {
-//     // Zustand Store se Categories
-//      const { categories } = useInventoryStore();
-
-// //    Ek state variable banaya formData ke naam se.
-//     const [formData, setFormData] = useState(item || { name: '', categoryId: '', unit: 'pcs', quantity: 0, rate: 0 });
-// // Ye har input field ke liye onChange handler hai.
-//     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
-//     const handleSubmit = (e) => {
-//         e.preventDefault();
-//         if (!formData.name || !formData.quantity || !formData.rate) return toast.error("All fields are required.");
-//         onSave(formData);
-//     };
-//     return (
-//         <form onSubmit={handleSubmit} className="space-y-4">
-//             {/* iteam name */}
-//             <div><label>Item Name</label><input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full mt-1 p-2 border rounded-lg bg-transparent dark:border-gray-600 focus:ring-2 focus:ring-brand-red" required /></div>
-
-//   {/* categories working code */}  
-// <div><label>Category</label><select name="categoryId" value={formData.categoryId} onChange={handleChange} className="w-full mt-1 p-2 border rounded-lg bg-transparent dark:border-gray-600 focus:ring-2 focus:ring-brand-red">{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-
-
-
-
-
-             
-//   {/* unit */}
-//             <div><label>Unit (kg/ltr/pcs)</label><input type="text" name="unit" value={formData.unit} onChange={handleChange} className="w-full mt-1 p-2 border rounded-lg bg-transparent dark:border-gray-600 focus:ring-2 focus:ring-brand-red" /></div>
- 
-//                   {/* Quantity */}
-//             <div><label>Quantity</label><input type="number" name="quantity" value={formData.quantity} onChange={handleChange} className="w-full mt-1 p-2 border rounded-lg bg-transparent dark:border-gray-600 focus:ring-2 focus:ring-brand-red" /></div>
-     
-//                {/* Rate */}
-//             <div><label>Rate (Avg)</label><input type="number" name="rate" value={formData.rate} onChange={handleChange} className="w-full mt-1 p-2 border rounded-lg bg-transparent dark:border-gray-600 focus:ring-2 focus:ring-brand-red" /></div>
-                      
-//                       {/* save iteam */}
-//             <div className="flex justify-end space-x-2">
-//                 <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-//             <Button type="submit">Save Item</Button>
-//             </div>
-
-//         </form>
-//     );
-// };
-
-// const StockTab = () => {
-//     // useState
-//     const { stockItems, categories, addStockItem, updateStockItem, deleteStockItem } = useInventoryStore();
-//     const [isModalOpen, setIsModalOpen] = useState(false);
-//     const [editingItem, setEditingItem] = useState(null);
-//     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-//     const [itemToDelete, setItemToDelete] = useState(null);
-
-//     // Function handleSave
-//     const handleSave = (itemData) => {
-//         if (editingItem) {
-//             updateStockItem({ ...editingItem, ...itemData });
-//             toast.success("Stock item updated!");
-//         } else {
-//             addStockItem(itemData);
-//             toast.success("New stock item added!");
-//         }
-//         setIsModalOpen(false);
-//     };
-//             // handleDelete
-//     const handleDelete = (item) => {
-//         setItemToDelete(item);
-//         setIsDeleteModalOpen(true);
-//     };
-
-//         //    confirmDelete
-//     const confirmDelete = () => {
-//         deleteStockItem(itemToDelete.id);
-//         toast.success("Stock item deleted.");
-//         setIsDeleteModalOpen(false);
-//     }
-
-//     // change the function
-//     const getCategoryName = (id) => categories.find(c => c.id === id)?.name || 'N/A';
-
-//  return (
-//         <div>
-//             {/* <Modal> component function */}
-//             <Modal isOpen={isModalOpen}
-//              onClose={() => setIsModalOpen(false)}
-//               title={editingItem ? "Edit Stock Item" : "Add Stock Item"}>
-//                 <StockForm item={editingItem}
-//              onSave={handleSave} onCancel={() => setIsModalOpen(false)} />
-//             </Modal>
-
-//             {/* <ConfirmModal> cancel btn component function */}
-//              <ConfirmModal
-//                 isOpen={isDeleteModalOpen}
-//                 onClose={() => setIsDeleteModalOpen(false)}
-//                 onConfirm={confirmDelete}
-//                 title="Delete Stock Item"
-//                 message={`Are you sure you want to delete ${itemToDelete?.name}?`}
-//             />
-//                     {/* Add Stock Item btn ke bare me  */}
-//             <div className="flex justify-between items-center mb-4">
-//                 <h3 className="text-lg font-bold dark:text-dark-text">Stock List</h3>
-//                 <Button onClick={() => { setEditingItem(null); setIsModalOpen(true); }}>
-//                     <PlusCircle className="h-4 w-4 mr-2" />Add Stock Item</Button>
-//             </div>
-             
-//              {/* list of iteam */}
-//             <div className="overflow-x-auto">
-//                 <table className="w-full text-sm dark:text-dark-text-secondary">
-//                     <thead className="bg-gray-50 dark:bg-gray-700 text-left">
-//                         <tr><th className="p-2">Item</th>
-//                         <th className="p-2">Category</th>
-//                         <th className="p-2">Qty</th>
-//                         <th className="p-2">Avg Rate</th>
-//                         <th className="p-2">Valuation</th>
-//                         <th className="p-2 text-right">Actions</th>
-//                         </tr>
-//                     </thead>
-
-//                     <tbody>
-//                           {stockItems.length > 0 ? stockItems.map(item => (
-//                             <tr key={item.id} className="border-b dark:border-gray-700 even:bg-gray-50 dark:even:bg-gray-800/50">
-//                                 <td className="p-2 font-medium dark:text-dark-text">{item.name}</td><td className="p-2">{getCategoryName(item.categoryId)}</td>
-//                                 <td className="p-2">{item.quantity} {item.unit}</td>
-//                                 <td className="p-2">{parseFloat(item.rate).toLocaleString('en-IN')}</td>
-//                                 <td className="p-2">{(item.quantity * item.rate).toLocaleString('en-IN')}</td>
-
-//                                 <td className="p-2 text-right space-x-1">
-//                                     {/* Edit btn */}
-//                                     <Button variant="ghost" className="p-1 h-auto"
-//                                      onClick={() => { setEditingItem(item); setIsModalOpen(true); }}>
-//                                         <Edit className="h-4 w-4 text-blue-600"/></Button>
-//                                         {/* Delet btn */}
-//                                     <Button variant="ghost" className="p-1 h-auto" onClick={() => handleDelete(item)}><Trash2 className="h-4 w-4 text-red-500"/></Button>
-//                                  </td>
-//                             </tr>
-//                         )) : (
-//                             <tr><td colSpan="6" className="text-center p-8 text-gray-500 dark:text-dark-text-secondary">No stock items found.</td></tr>
-//                         )}
-//                     </tbody>
-//                 </table>
-//             </div>
-//         </div>
-//     );
-// };
-
-// export default StockTab;
-
-
-//  experimant code !! sucessful
-
-// import React, { useState } from "react";
-// const StockTab = ({ categories }) => {
-
-
-// const [stockItems, setStockItems] = useState([
-//     { item: "", category: "", qty: 0, rate: 0, valuation: 0 },
-//   ]);
-
-//   const handleAddRow = () => {
-//     setStockItems([
-//       ...stockItems,
-//       { item: "", category: "", qty: 0, rate: 0, valuation: 0 },
-//     ]);
-//   };
-
-//   const handleDeleteRow = (index) => {
-//     const updated = stockItems.filter((_, i) => i !== index);
-//     setStockItems(updated);
-//   };
-
-//   const handleChange = (index, field, value) => {
-//     const updated = stockItems.map((row, i) => {
-//       if (i === index) {
-//         const newRow = { ...row, [field]: value };
-//         if (field === "qty" || field === "rate") {
-//           const qty = field === "qty" ? Number(value) : Number(row.qty);
-//           const rate = field === "rate" ? Number(value) : Number(row.rate);
-//           newRow.valuation = qty * rate;
-//         }
-//         return newRow;
-//       }
-//       return row;
-//     });
-//     setStockItems(updated);
-//   };
-
-//   return (
-   
-// <div className="p-4 border rounded mt-4">
-//       <h2 className="text-xl font-bold mb-4">Stock Tab</h2>
-
-//       <table className="w-full border-collapse border">
-//         <thead>
-//           <tr className="bg-gray-200">
-//             <th className="border p-2">S.No</th>
-//             <th className="border p-2">Item</th>
-//             <th className="border p-2">Category</th>
-//             <th className="border p-2">Qty</th>
-//             <th className="border p-2">Rate</th>
-//             <th className="border p-2">Valuation</th>
-//             <th className="border p-2">Actions</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {stockItems.map((row, index) => (
-//             <tr key={index} className="even:bg-gray-50">
-//               <td className="border p-2">{index + 1}</td>
-//               <td className="border p-2">
-//                 <input
-//                   type="text"
-//                   value={row.item}
-//                   onChange={(e) => handleChange(index, "item", e.target.value)}
-//                   className="border p-1 w-full"
-//                 />
-//               </td>
-//               <td className="border p-2">
-//                 <input
-//                   type="text"
-//                   list="category-list"
-//                   value={row.category}
-//                   onChange={(e) =>
-//                     handleChange(index, "category", e.target.value)
-//                   }
-//                   className="border p-1 w-full"
-//                 />
-//                 <datalist id="category-list">
-//                   {categories.map((cat, i) => (
-//                     <option key={i} value={cat.name} />
-//                   ))}
-//                 </datalist>
-//               </td>
-//               <td className="border p-2">
-//                 <input
-//                   type="number"
-//                   value={row.qty}
-//                   onChange={(e) => handleChange(index, "qty", e.target.value)}
-//                   className="border p-1 w-full"
-//                 />
-//               </td>
-//               <td className="border p-2">
-//                 <input
-//                   type="number"
-//                   value={row.rate}
-//                   onChange={(e) => handleChange(index, "rate", e.target.value)}
-//                   className="border p-1 w-full"
-//                 />
-//               </td>
-//               <td className="border p-2">{row.valuation}</td>
-//               <td className="border p-2 flex gap-2">
-//                 <button
-//                   onClick={() => handleDeleteRow(index)}
-//                   className="bg-red-500 text-white px-2"
-//                 >
-//                   Delete
-//                 </button>
-//               </td>
-//             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-
-//       <button
-//         onClick={handleAddRow}
-//         className="mt-4 bg-blue-500 text-white px-4 py-2"
-//       >
-//         Add Row
-//       </button>
-//     </div>
-
-
-//   )
-// }
-
-// export default StockTab
-
-
-
-// import React, { useState } from "react";
-
-// const StockTab = ({ categories }) => {
-//   // -----------------------------
-//   // Stock Items state
-//   // -----------------------------
-//   const [stockItems, setStockItems] = useState([
-//     { item: "", category: "", qty: 0, rate: 0, valuation: 0 },
-//   ]);
-
-//   // -----------------------------
-//   // Example items per category
-//   // Ye aap future me API ya localStorage se le sakte ho
-//   // -----------------------------
-//   const itemsByCategory = {
-//     Parts: ["Brake Pad", "Clutch", "Gear"],
-//     Labour: ["Painting", "Welding", "Polishing"],
-//     Hardware: ["Nuts", "Bolts", "Screws"],
-//     Steel: ["Beam", "Rod", "Sheet"],
-//   };
-
-//   // -----------------------------
-//   // Add new row
-//   // -----------------------------
-//   const handleAddRow = () => {
-//     setStockItems([
-//       ...stockItems,
-//       { item: "", category: "", qty: 0, rate: 0, valuation: 0 },
-//     ]);
-//   };
-
-//   // -----------------------------
-//   // Delete row
-//   // -----------------------------
-//   const handleDeleteRow = (index) => {
-//     const updated = stockItems.filter((_, i) => i !== index);
-//     setStockItems(updated);
-//   };
-
-//   // -----------------------------
-//   // Handle change in any field
-//   // -----------------------------
-//   const handleChange = (index, field, value) => {
-//     const updated = stockItems.map((row, i) => {
-//       if (i === index) {
-//         const newRow = { ...row, [field]: value };
-
-//         // Auto calculate valuation if qty or rate changes
-//         if (field === "qty" || field === "rate") {
-//           const qty = field === "qty" ? Number(value) : Number(row.qty);
-//           const rate = field === "rate" ? Number(value) : Number(row.rate);
-//           newRow.valuation = qty * rate;
-//         }
-
-//         // Auto clear item if category changes
-//         if (field === "category") {
-//           newRow.item = ""; // category change -> reset item
-//         }
-
-//         return newRow;
-//       }
-//       return row;
-//     });
-//     setStockItems(updated);
-//   };
-
-//   return (
-//     <div className="p-4 border rounded mt-4">
-//       <h2 className="text-xl font-bold mb-4">Stock Tab</h2>
-
-//       <table className="w-full border-collapse border">
-//         <thead>
-//           <tr className="bg-gray-200">
-//             <th className="border p-2">S.No</th>
-//             <th className="border p-2">Item</th>
-//             <th className="border p-2">Category</th>
-//             <th className="border p-2">Qty</th>
-//             <th className="border p-2">Rate</th>
-//             <th className="border p-2">Valuation</th>
-//             <th className="border p-2">Actions</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {stockItems.map((row, index) => (
-//             <tr key={index} className="even:bg-gray-50">
-//               {/* S.No */}
-//               <td className="border p-2">{index + 1}</td>
-
-//               {/* Item Input */}
-//               <td className="border p-2">
-//                 <input
-//                   type="text"
-//                   list={`items-${index}`} // unique datalist for each row
-//                   value={row.item}
-//                   onChange={(e) => handleChange(index, "item", e.target.value)}
-//                   className="border p-1 w-full"
-//                   placeholder="Type or select item"
-//                 />
-//                 <datalist id={`items-${index}`}>
-//                   {row.category &&
-//                     itemsByCategory[row.category]?.map((item, i) => (
-//                       <option key={i} value={item} />
-//                     ))}
-//                 </datalist>
-//               </td>
-
-//               {/* Category Input */}
-//               <td className="border p-2">
-//                 <input
-//                   type="text"
-//                   list="category-list"
-//                   value={row.category}
-//                   onChange={(e) =>
-//                     handleChange(index, "category", e.target.value)
-//                   }
-//                   className="border p-1 w-full"
-//                   placeholder="Type or select category"
-//                 />
-//                 <datalist id="category-list">
-//                   {categories?.map((cat, i) => (
-//                     <option key={i} value={cat.name} />
-//                   ))}
-//                 </datalist>
-//               </td>
-
-//               {/* Quantity */}
-//               <td className="border p-2">
-//                 <input
-//                   type="number"
-//                   value={row.qty}
-//                   onChange={(e) => handleChange(index, "qty", e.target.value)}
-//                   className="border p-1 w-full"
-//                 />
-//               </td>
-
-//               {/* Rate */}
-//               <td className="border p-2">
-//                 <input
-//                   type="number"
-//                   value={row.rate}
-//                   onChange={(e) => handleChange(index, "rate", e.target.value)}
-//                   className="border p-1 w-full"
-//                 />
-//               </td>
-
-//               {/* Valuation */}
-//               <td className="border p-2">{row.valuation}</td>
-
-//               {/* Actions */}
-//               <td className="border p-2 flex gap-2">
-//                 <button
-//                   onClick={() => handleDeleteRow(index)}
-//                   className="bg-red-500 text-white px-2 rounded"
-//                 >
-//                   Delete
-//                 </button>
-//               </td>
-//             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-
-//       {/* Add Row Button */}
-//       <button
-//         onClick={handleAddRow}
-//         className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
-//       >
-//         Add Row
-//       </button>
-//     </div>
-//   );
-// };
-
-// export default StockTab;
-
-
-
-
-
-
-// ye direct job sheet se aa raha hai.
-import React, { useState, useEffect } from "react";
-import { SaveAllIcon, Trash2 } from "lucide-react";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-
-const StockTab = () => {
-  const [rows, setRows] = useState([]);
-
-  // Load from JobSheet (estimate + extraWork) with robust cost/total logic
-  useEffect(() => {
-    const jobSheetEstimate = JSON.parse(localStorage.getItem("jobSheetEstimate")) || [];
-    const extraWork = JSON.parse(localStorage.getItem("extraWork")) || [];
-
-    const combined = [...jobSheetEstimate, ...extraWork];
-
-    const transformedRows = combined.map((r) => {
-      // normalize numeric inputs
-      const qty = Number.isFinite(parseFloat(r.qty)) ? parseFloat(r.qty) : (Number.isFinite(parseFloat(r.quantity)) ? parseFloat(r.quantity) : 0);
-      const cost = Number.isFinite(parseFloat(r.cost)) ? parseFloat(r.cost) : (Number.isFinite(parseFloat(r.rate)) ? parseFloat(r.rate) : 0);
-      const multiplier =
-        Number.isFinite(parseFloat(r.multiplier)) ? parseFloat(r.multiplier) :
-        Number.isFinite(parseFloat(r.mul)) ? parseFloat(r.mul) :
-        0;
-
-      // priority for total:
-      // 1) if row.total provided and numeric -> use it
-      // 2) else if multiplier present -> cost * multiplier (JobSheet style)
-      // 3) else if qty present -> cost * qty
-      // 4) else fallback to cost
-      let totalValue = 0;
-      if (Number.isFinite(parseFloat(r.total))) {
-        totalValue = parseFloat(r.total);
-      } else if (multiplier > 0) {
-        totalValue = cost * multiplier;
-      } else if (qty > 0) {
-        totalValue = cost * qty;
-      } else {
-        totalValue = cost;
-      }
-
-      return {
-        // keep raw numbers so we can format when rendering
-        date: new Date().toISOString().split("T")[0],
-        type: "In",
-        item: r.item || "",
-        linkedTo: r.category || r.linkedTo || "",
-        qty: qty,     // number (0 if not provided)
-        cost: cost,   // number
-        total: totalValue, // number
-        referral: r.jobSheetNo || r.referral || "JobSheet",
-      };
-    });
-
-    setRows(transformedRows);
-    localStorage.setItem("stockMovements", JSON.stringify(transformedRows));
-  }, []);
-
-  // Handle manual type change (In/Out)
-  const handleChangeType = (index, value) => {
-    const updated = [...rows];
-    updated[index].type = value;
-    setRows(updated);
-    localStorage.setItem("stockMovements", JSON.stringify(updated));
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Modal from '@/components/ui/Modal';
+import ConfirmModal from '@/components/ui/ConfirmModal';
+import { toast } from 'sonner';
+import { PlusCircle, Edit, Trash2, Download, Printer, Search, AlertTriangle } from 'lucide-react';
+
+const StockItemForm = ({ item, categories, onSave, onCancel }) => {
+  const [formData, setFormData] = useState(
+    item || {
+      item_code: '',
+      item_name: '',
+      category_id: '',
+      unit: 'pcs',
+      initial_stock: 0,
+      reorder_level: 0,
+      cost_price: 0,
+      selling_price: 0,
+      location: '',
+    }
+  );
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Delete row -> update state + localStorage
-  const handleDelete = (index) => {
-    if (!window.confirm("Are you sure you want to delete this stock row?")) return;
-    const updated = rows.filter((_, i) => i !== index);
-    setRows(updated);
-    localStorage.setItem("stockMovements", JSON.stringify(updated));
-  };
-
-  // Save manually (optional)
-  const saveToLocalStorage = () => {
-    localStorage.setItem("stockMovements", JSON.stringify(rows));
-    alert("✅ Stock Movements saved.");
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.item_name) {
+      toast.error('Item name is required.');
+      return;
+    }
+    if (!formData.category_id) {
+      toast.error('Category is required.');
+      return;
+    }
+    if (!formData.unit) {
+      toast.error('Unit is required.');
+      return;
+    }
+    onSave(formData);
   };
 
   return (
-    <Card className="p-4 mt-2">
-      <h2 className="text-lg font-semibold mb-4">📦 Stock Movements</h2>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Item Code
+          </label>
+          <input
+            type="text"
+            name="item_code"
+            value={formData.item_code}
+            onChange={handleChange}
+            placeholder="Auto-generated if empty"
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          />
+        </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-300 text-sm">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-2">Date</th>
-              <th className="border p-2">Type</th>
-              <th className="border p-2">Item</th>
-              <th className="border p-2">Category</th>
-              <th className="border p-2 text-right">Qty</th>
-              <th className="border p-2 text-right">Cost</th>
-              <th className="border p-2 text-right">Total</th>
-              <th className="border p-2">Referral (JobSheet)</th>
-              <th className="border p-2 text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Item Name *
+          </label>
+          <input
+            type="text"
+            name="item_name"
+            value={formData.item_name}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Category *
+          </label>
+          <select
+            name="category_id"
+            value={formData.category_id}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            required
+          >
+            <option value="">Select Category</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Unit *
+          </label>
+          <select
+            name="unit"
+            value={formData.unit}
+            onChange={handleChange}
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            required
+          >
+            <option value="pcs">Pieces (pcs)</option>
+            <option value="kg">Kilogram (kg)</option>
+            <option value="ltr">Liter (ltr)</option>
+            <option value="mtr">Meter (mtr)</option>
+            <option value="box">Box</option>
+            <option value="set">Set</option>
+          </select>
+        </div>
+      </div>
+
+      {!item && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Initial Stock Quantity
+          </label>
+          <input
+            type="number"
+            name="initial_stock"
+            value={formData.initial_stock}
+            onChange={handleChange}
+            step="0.01"
+            min="0"
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Opening stock quantity (will create a stock movement record)
+          </p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Reorder Level
+          </label>
+          <input
+            type="number"
+            name="reorder_level"
+            value={formData.reorder_level}
+            onChange={handleChange}
+            step="0.01"
+            min="0"
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Location
+          </label>
+          <input
+            type="text"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            placeholder="e.g., Warehouse A, Shelf 3"
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Cost Price (₹)
+          </label>
+          <input
+            type="number"
+            name="cost_price"
+            value={formData.cost_price}
+            onChange={handleChange}
+            step="0.01"
+            min="0"
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Selling Price (₹)
+          </label>
+          <input
+            type="number"
+            name="selling_price"
+            value={formData.selling_price}
+            onChange={handleChange}
+            step="0.01"
+            min="0"
+            className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">{item ? 'Update Item' : 'Add Item'}</Button>
+      </div>
+    </form>
+  );
+};
+
+const StockAdjustmentForm = ({ item, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    adjustment_quantity: 0,
+    adjustment_type: 'add',
+    notes: '',
+  });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (parseFloat(formData.adjustment_quantity) === 0) {
+      toast.error('Adjustment quantity must be greater than 0.');
+      return;
+    }
+    onSave(formData);
+  };
+
+  const newStock =
+    formData.adjustment_type === 'add'
+      ? parseFloat(item.current_stock || 0) + parseFloat(formData.adjustment_quantity || 0)
+      : parseFloat(item.current_stock || 0) - parseFloat(formData.adjustment_quantity || 0);
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+        <p className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary">
+          Current Stock: <span className="font-bold text-gray-900 dark:text-dark-text">{item.current_stock} {item.unit}</span>
+        </p>
+        <p className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary mt-1">
+          Item: <span className="font-bold text-gray-900 dark:text-dark-text">{item.item_name}</span>
+        </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+          Adjustment Type *
+        </label>
+        <select
+          name="adjustment_type"
+          value={formData.adjustment_type}
+          onChange={handleChange}
+          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          required
+        >
+          <option value="add">Add Stock (Increase)</option>
+          <option value="subtract">Remove Stock (Decrease)</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+          Adjustment Quantity *
+        </label>
+        <input
+          type="number"
+          name="adjustment_quantity"
+          value={formData.adjustment_quantity}
+          onChange={handleChange}
+          step="0.01"
+          min="0.01"
+          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+          Notes/Reason
+        </label>
+        <textarea
+          name="notes"
+          value={formData.notes}
+          onChange={handleChange}
+          rows="2"
+          placeholder="e.g., Stock take adjustment, Damaged items"
+          className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+        />
+      </div>
+
+      <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+        <p className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary">
+          New Stock After Adjustment: <span className={`font-bold ${newStock >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            {newStock.toFixed(2)} {item.unit}
+          </span>
+        </p>
+      </div>
+
+      <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <Button type="button" variant="secondary" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit">Apply Adjustment</Button>
+      </div>
+    </form>
+  );
+};
+
+const StockTab = () => {
+  const [stockItems, setStockItems] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAdjustmentModalOpen, setIsAdjustmentModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [adjustingItem, setAdjustingItem] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [stockFilter, setStockFilter] = useState('all');
+
+  useEffect(() => {
+    fetchCategories();
+    fetchStockItems();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_categories')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      toast.error('Failed to load categories');
+    }
+  };
+
+  const fetchStockItems = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select(`
+          *,
+          category:inventory_categories(id, name)
+        `)
+        .order('item_name');
+
+      if (error) throw error;
+      setStockItems(data || []);
+    } catch (error) {
+      console.error('Error fetching stock items:', error);
+      toast.error('Failed to load stock items');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddItem = async (itemData) => {
+    try {
+      const initialStock = parseFloat(itemData.initial_stock || 0);
+      delete itemData.initial_stock;
+
+      const { data: newItem, error: itemError } = await supabase
+        .from('inventory_items')
+        .insert([itemData])
+        .select()
+        .single();
+
+      if (itemError) throw itemError;
+
+      if (initialStock > 0) {
+        const { error: movementError } = await supabase
+          .from('stock_movements')
+          .insert([{
+            item_id: newItem.id,
+            movement_type: 'in',
+            quantity: initialStock,
+            movement_date: new Date().toISOString().split('T')[0],
+            reference_type: 'opening',
+            reference_no: 'OPENING',
+            notes: 'Opening stock',
+          }]);
+
+        if (movementError) throw movementError;
+      }
+
+      toast.success('Stock item added successfully!');
+      setIsModalOpen(false);
+      fetchStockItems();
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast.error('Failed to add stock item');
+    }
+  };
+
+  const handleUpdateItem = async (itemData) => {
+    try {
+      const { error } = await supabase
+        .from('inventory_items')
+        .update(itemData)
+        .eq('id', editingItem.id);
+
+      if (error) throw error;
+
+      toast.success('Stock item updated successfully!');
+      setIsModalOpen(false);
+      setEditingItem(null);
+      fetchStockItems();
+    } catch (error) {
+      console.error('Error updating item:', error);
+      toast.error('Failed to update stock item');
+    }
+  };
+
+  const handleStockAdjustment = async (adjustmentData) => {
+    try {
+      const quantity = parseFloat(adjustmentData.adjustment_quantity);
+      const movementType = adjustmentData.adjustment_type === 'add' ? 'in' : 'out';
+
+      const { error } = await supabase
+        .from('stock_movements')
+        .insert([{
+          item_id: adjustingItem.id,
+          movement_type: movementType,
+          quantity: quantity,
+          movement_date: new Date().toISOString().split('T')[0],
+          reference_type: 'adjustment',
+          reference_no: `ADJ-${Date.now()}`,
+          notes: adjustmentData.notes || 'Manual stock adjustment',
+        }]);
+
+      if (error) throw error;
+
+      toast.success('Stock adjustment applied successfully!');
+      setIsAdjustmentModalOpen(false);
+      setAdjustingItem(null);
+      fetchStockItems();
+    } catch (error) {
+      console.error('Error applying adjustment:', error);
+      toast.error('Failed to apply stock adjustment');
+    }
+  };
+
+  const handleDeleteItem = async () => {
+    try {
+      const { error } = await supabase
+        .from('inventory_items')
+        .delete()
+        .eq('id', itemToDelete.id);
+
+      if (error) throw error;
+
+      toast.success(`"${itemToDelete.item_name}" deleted successfully.`);
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
+      fetchStockItems();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      toast.error('Failed to delete item. It may be referenced in transactions.');
+    }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Item Code', 'Item Name', 'Category', 'Current Stock', 'Unit', 'Reorder Level', 'Cost Price', 'Selling Price', 'Valuation', 'Location'];
+    const csvContent = [
+      headers.join(','),
+      ...filteredItems.map((item) =>
+        [
+          item.item_code || '',
+          item.item_name,
+          item.category?.name || '',
+          item.current_stock || 0,
+          item.unit,
+          item.reorder_level || 0,
+          item.cost_price || 0,
+          item.selling_price || 0,
+          (parseFloat(item.current_stock || 0) * parseFloat(item.cost_price || 0)).toFixed(2),
+          item.location || '',
+        ].join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `stock_list_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    toast.success('Stock list exported to CSV');
+  };
+
+  const handlePrint = () => {
+    window.print();
+    toast.success('Print dialog opened');
+  };
+
+  const filteredItems = stockItems.filter((item) => {
+    const matchesSearch =
+      item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.item_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = !categoryFilter || item.category_id === categoryFilter;
+    const matchesStock =
+      stockFilter === 'all' ||
+      (stockFilter === 'low' && parseFloat(item.current_stock || 0) <= parseFloat(item.reorder_level || 0)) ||
+      (stockFilter === 'zero' && parseFloat(item.current_stock || 0) === 0);
+    return matchesSearch && matchesCategory && matchesStock;
+  });
+
+  const totalValuation = filteredItems.reduce(
+    (sum, item) => sum + parseFloat(item.current_stock || 0) * parseFloat(item.cost_price || 0),
+    0
+  );
+
+  if (loading) {
+    return (
+      <Card>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-red"></div>
+          <span className="ml-3 text-gray-600 dark:text-dark-text-secondary">Loading stock items...</span>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingItem(null);
+        }}
+        title={editingItem ? 'Edit Stock Item' : 'Add Stock Item'}
+      >
+        <StockItemForm
+          item={editingItem}
+          categories={categories}
+          onSave={editingItem ? handleUpdateItem : handleAddItem}
+          onCancel={() => {
+            setIsModalOpen(false);
+            setEditingItem(null);
+          }}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={isAdjustmentModalOpen}
+        onClose={() => {
+          setIsAdjustmentModalOpen(false);
+          setAdjustingItem(null);
+        }}
+        title="Stock Adjustment"
+      >
+        {adjustingItem && (
+          <StockAdjustmentForm
+            item={adjustingItem}
+            onSave={handleStockAdjustment}
+            onCancel={() => {
+              setIsAdjustmentModalOpen(false);
+              setAdjustingItem(null);
+            }}
+          />
+        )}
+      </Modal>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteItem}
+        title="Delete Stock Item"
+        message={`Are you sure you want to delete "${itemToDelete?.item_name}"? This action cannot be undone.`}
+      />
+
+      <Card>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-dark-text">Stock List</h3>
+          <Button
+            onClick={() => {
+              if (categories.length === 0) {
+                toast.error('Please add categories first in the "Manage Categories" tab');
+                return;
+              }
+              setIsModalOpen(true);
+            }}
+          >
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add Stock Item
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="relative md:col-span-2">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by item name, code, or category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+            />
+          </div>
+
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          >
+            <option value="">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={stockFilter}
+            onChange={(e) => setStockFilter(e.target.value)}
+            className="p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
+          >
+            <option value="all">All Stock</option>
+            <option value="low">Low Stock (Below Reorder)</option>
+            <option value="zero">Out of Stock</option>
+          </select>
+        </div>
+
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-gray-600 dark:text-dark-text-secondary">
+            Total Valuation: <span className="font-bold text-green-600 dark:text-green-400">
+              ₹{totalValuation.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="secondary" onClick={exportToCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button variant="secondary" onClick={handlePrint}>
+              <Printer className="h-4 w-4 mr-2" />
+              Print
+            </Button>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-700 text-left">
               <tr>
-                <td colSpan="9" className="text-center p-3 text-gray-500">
-                  No Stock Movement Data Found
-                </td>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Item Code</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Item Name</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Category</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Current Stock</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Reorder Level</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Cost Price</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Valuation</th>
+                <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Actions</th>
               </tr>
-            ) : (
-              rows.map((row, index) => (
-                <tr key={index} className="hover:bg-gray-50">
-                  <td className="border p-2 text-center">{row.date}</td>
+            </thead>
+            <tbody>
+              {filteredItems.length > 0 ? (
+                filteredItems.map((item) => {
+                  const isLowStock = parseFloat(item.current_stock || 0) <= parseFloat(item.reorder_level || 0);
+                  const isOutOfStock = parseFloat(item.current_stock || 0) === 0;
+                  const valuation = parseFloat(item.current_stock || 0) * parseFloat(item.cost_price || 0);
 
-                  <td className="border p-2">
-                    <select
-                      value={row.type}
-                      onChange={(e) => handleChangeType(index, e.target.value)}
-                      className="w-full border rounded px-2 py-1"
+                  return (
+                    <tr
+                      key={item.id}
+                      className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                     >
-                      <option value="In">In</option>
-                      <option value="Out">Out</option>
-                    </select>
-                  </td>
-
-                  <td className="border p-2">{row.item}</td>
-                  <td className="border p-2">{row.linkedTo}</td>
-
-                  <td className="border p-2 text-right">{Number.isFinite(row.qty) ? row.qty : "-"}</td>
-                  <td className="border p-2 text-right">{Number.isFinite(row.cost) ? row.cost.toFixed(2) : "-"}</td>
-                  <td className="border p-2 text-right">{Number.isFinite(row.total) ? row.total.toFixed(2) : "-"}</td>
-                  <td className="border p-2">{row.referral}</td>
-
-                  <td className="border p-2 text-center">
-                    <button
-                      onClick={() => handleDelete(index)}
-                      className="text-red-600 hover:text-red-800"
-                      title="Delete Row"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                      <td className="p-3 text-gray-700 dark:text-dark-text-secondary">
+                        {item.item_code || '-'}
+                      </td>
+                      <td className="p-3 font-medium text-gray-900 dark:text-dark-text">
+                        {item.item_name}
+                        {isOutOfStock && (
+                          <AlertTriangle className="inline h-4 w-4 ml-2 text-red-500" title="Out of Stock" />
+                        )}
+                        {!isOutOfStock && isLowStock && (
+                          <AlertTriangle className="inline h-4 w-4 ml-2 text-orange-500" title="Low Stock" />
+                        )}
+                      </td>
+                      <td className="p-3">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                          {item.category?.name || '-'}
+                        </span>
+                      </td>
+                      <td className={`p-3 text-right font-medium ${isOutOfStock ? 'text-red-600 dark:text-red-400' : isLowStock ? 'text-orange-600 dark:text-orange-400' : 'text-gray-900 dark:text-dark-text'}`}>
+                        {parseFloat(item.current_stock || 0).toFixed(2)} {item.unit}
+                      </td>
+                      <td className="p-3 text-right text-gray-700 dark:text-dark-text-secondary">
+                        {parseFloat(item.reorder_level || 0).toFixed(2)} {item.unit}
+                      </td>
+                      <td className="p-3 text-right text-gray-700 dark:text-dark-text-secondary">
+                        ₹{parseFloat(item.cost_price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-3 text-right font-medium text-green-600 dark:text-green-400">
+                        ₹{valuation.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="p-3 text-right">
+                        <div className="flex justify-end items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            className="p-2 h-auto"
+                            onClick={() => {
+                              setAdjustingItem(item);
+                              setIsAdjustmentModalOpen(true);
+                            }}
+                            title="Adjust Stock"
+                          >
+                            <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">Adjust</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="p-2 h-auto"
+                            onClick={() => {
+                              setEditingItem(item);
+                              setIsModalOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="p-2 h-auto"
+                            onClick={() => {
+                              setItemToDelete(item);
+                              setIsDeleteModalOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="8" className="text-center p-12">
+                    <div className="flex flex-col items-center text-gray-500 dark:text-dark-text-secondary">
+                      <p className="text-lg font-medium">No stock items found</p>
+                      <p className="text-sm mt-1">
+                        {searchTerm || categoryFilter || stockFilter !== 'all'
+                          ? 'Try adjusting your filters'
+                          : 'Add your first stock item to get started'}
+                      </p>
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              )}
+            </tbody>
+          </table>
+        </div>
 
-      <div className="flex justify-end mt-4">
-        <Button onClick={saveToLocalStorage} className="bg-green-600 text-white">
-          <SaveAllIcon className="mr-2" /> Save All
-        </Button>
-      </div>
-    </Card>
+        {filteredItems.length > 0 && (
+          <div className="mt-4 text-sm text-gray-600 dark:text-dark-text-secondary">
+            Showing {filteredItems.length} of {stockItems.length} item(s)
+          </div>
+        )}
+      </Card>
+    </div>
   );
 };
 
 export default StockTab;
-
-

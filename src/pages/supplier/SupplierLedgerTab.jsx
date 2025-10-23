@@ -1,20 +1,20 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import useLabourStore from '@/store/labourStore';
+import useSupplierStore from '@/store/supplierStore';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import ConfirmModal from '@/components/ui/ConfirmModal';
 import { toast } from 'sonner';
-import { PlusCircle, Download, FileText, Printer, Edit, Trash2, Search } from 'lucide-react';
+import { PlusCircle, Download, FileText, Printer, Edit, Trash2, Search, ExternalLink } from 'lucide-react';
 import jsPDF from 'jspdf';
 
-const ManualEntryForm = ({ labourId, entry, onSave, onCancel }) => {
+const ManualEntryForm = ({ supplierId, entry, onSave, onCancel }) => {
   const [formData, setFormData] = useState(
     entry || {
       entry_date: new Date().toISOString().split('T')[0],
       particulars: '',
-      skill_type: '',
+      category: '',
       debit_amount: 0,
       credit_amount: 0,
       notes: '',
@@ -35,7 +35,7 @@ const ManualEntryForm = ({ labourId, entry, onSave, onCancel }) => {
       toast.error('Either Debit or Credit amount must be greater than 0.');
       return;
     }
-    onSave({ ...formData, labour_id: labourId });
+    onSave({ ...formData, supplier_id: supplierId });
   };
 
   return (
@@ -71,14 +71,14 @@ const ManualEntryForm = ({ labourId, entry, onSave, onCancel }) => {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-          Skill/Trade
+          Category
         </label>
         <input
           type="text"
-          name="skill_type"
-          value={formData.skill_type}
+          name="category"
+          value={formData.category}
           onChange={handleChange}
-          placeholder="e.g., Welder, Painter, Mechanic"
+          placeholder="e.g., Hardware, Steel, Paints"
           className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
         />
       </div>
@@ -86,7 +86,7 @@ const ManualEntryForm = ({ labourId, entry, onSave, onCancel }) => {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-            Debit (Payable) ₹
+            Debit (Paid) ₹
           </label>
           <input
             type="number"
@@ -101,7 +101,7 @@ const ManualEntryForm = ({ labourId, entry, onSave, onCancel }) => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-            Credit (Paid) ₹
+            Credit (Owe) ₹
           </label>
           <input
             type="number"
@@ -138,41 +138,155 @@ const ManualEntryForm = ({ labourId, entry, onSave, onCancel }) => {
   );
 };
 
-const LabourLedgerTab = () => {
-  const { labours, fetchLabour } = useLabourStore();
-  const [selectedLabourId, setSelectedLabourId] = useState('');
+const DocumentDetailsModal = ({ documentId, documentType, onClose }) => {
+  const [documentData, setDocumentData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDocumentDetails();
+  }, [documentId, documentType]);
+
+  const fetchDocumentDetails = async () => {
+    if (!documentId || !documentType) return;
+
+    setLoading(true);
+    try {
+      let tableName = '';
+      if (documentType === 'purchase') tableName = 'purchases';
+      else if (documentType === 'purchase_challan') tableName = 'purchase_challans';
+      else if (documentType === 'voucher') tableName = 'vouchers';
+
+      if (!tableName) {
+        toast.error('Invalid document type');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq('id', documentId)
+        .maybeSingle();
+
+      if (error) throw error;
+      setDocumentData(data);
+    } catch (error) {
+      console.error('Error fetching document:', error);
+      toast.error('Failed to load document details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-red"></div>
+        <span className="ml-3">Loading document...</span>
+      </div>
+    );
+  }
+
+  if (!documentData) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        Document not found or has been deleted.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+        <h3 className="font-semibold text-lg mb-2">
+          {documentType === 'purchase' && 'Purchase Invoice'}
+          {documentType === 'purchase_challan' && 'Purchase Challan'}
+          {documentType === 'voucher' && 'Payment Voucher'}
+        </h3>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <span className="text-gray-600 dark:text-dark-text-secondary">Document No:</span>
+            <span className="ml-2 font-medium">{documentData.invoice_no || documentData.challan_no || documentData.voucher_no}</span>
+          </div>
+          <div>
+            <span className="text-gray-600 dark:text-dark-text-secondary">Date:</span>
+            <span className="ml-2 font-medium">
+              {new Date(documentData.invoice_date || documentData.challan_date || documentData.voucher_date).toLocaleDateString('en-IN')}
+            </span>
+          </div>
+          {documentData.total_amount !== undefined && (
+            <div>
+              <span className="text-gray-600 dark:text-dark-text-secondary">Amount:</span>
+              <span className="ml-2 font-medium text-green-600">
+                ₹{parseFloat(documentData.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
+          {documentData.payment_amount !== undefined && (
+            <div>
+              <span className="text-gray-600 dark:text-dark-text-secondary">Payment:</span>
+              <span className="ml-2 font-medium text-red-600">
+                ₹{parseFloat(documentData.payment_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {documentData.notes && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
+            Notes
+          </label>
+          <p className="text-sm text-gray-600 dark:text-dark-text-secondary bg-gray-50 dark:bg-gray-800 p-3 rounded">
+            {documentData.notes}
+          </p>
+        </div>
+      )}
+
+      <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
+        <Button onClick={onClose}>Close</Button>
+      </div>
+    </div>
+  );
+};
+
+const SupplierLedgerTab = () => {
+  const { suppliers, fetchSuppliers } = useSupplierStore();
+  const [selectedSupplierId, setSelectedSupplierId] = useState('');
   const [ledgerEntries, setLedgerEntries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState(null);
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState({ id: null, type: null });
 
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
-    skillSearch: '',
+    categorySearch: '',
   });
 
   useEffect(() => {
-    fetchLabour();
-  }, [fetchLabour]);
+    fetchSuppliers();
+  }, [fetchSuppliers]);
 
   useEffect(() => {
-    if (selectedLabourId) {
+    if (selectedSupplierId) {
       fetchLedgerEntries();
     } else {
       setLedgerEntries([]);
     }
-  }, [selectedLabourId, filters]);
+  }, [selectedSupplierId, filters]);
 
   const fetchLedgerEntries = async () => {
     setLoading(true);
     try {
       let query = supabase
-        .from('labour_ledger_entries')
+        .from('supplier_ledger_entries')
         .select('*')
-        .eq('labour_id', selectedLabourId)
+        .eq('supplier_id', selectedSupplierId)
         .order('entry_date', { ascending: true })
         .order('created_at', { ascending: true });
 
@@ -188,9 +302,9 @@ const LabourLedgerTab = () => {
       if (error) throw error;
 
       let filteredData = data || [];
-      if (filters.skillSearch) {
+      if (filters.categorySearch) {
         filteredData = filteredData.filter((entry) =>
-          entry.skill_type?.toLowerCase().includes(filters.skillSearch.toLowerCase())
+          entry.category?.toLowerCase().includes(filters.categorySearch.toLowerCase())
         );
       }
 
@@ -206,7 +320,7 @@ const LabourLedgerTab = () => {
   const handleAddEntry = async (entryData) => {
     try {
       const { data, error } = await supabase
-        .from('labour_ledger_entries')
+        .from('supplier_ledger_entries')
         .insert([entryData])
         .select();
 
@@ -224,7 +338,7 @@ const LabourLedgerTab = () => {
   const handleEditEntry = async (entryData) => {
     try {
       const { error } = await supabase
-        .from('labour_ledger_entries')
+        .from('supplier_ledger_entries')
         .update(entryData)
         .eq('id', editingEntry.id)
         .eq('entry_type', 'manual');
@@ -244,7 +358,7 @@ const LabourLedgerTab = () => {
   const handleDeleteEntry = async () => {
     try {
       const { error } = await supabase
-        .from('labour_ledger_entries')
+        .from('supplier_ledger_entries')
         .delete()
         .eq('id', entryToDelete.id)
         .eq('entry_type', 'manual');
@@ -279,10 +393,22 @@ const LabourLedgerTab = () => {
     setIsDeleteModalOpen(true);
   };
 
+  const openDocumentModal = (entry) => {
+    if (entry.reference_id && entry.reference_type) {
+      setSelectedDocument({
+        id: entry.reference_id,
+        type: entry.reference_type,
+      });
+      setIsDocumentModalOpen(true);
+    } else {
+      toast.error('No linked document found');
+    }
+  };
+
   const calculateRunningBalance = () => {
     let balance = 0;
     return ledgerEntries.map((entry) => {
-      balance += parseFloat(entry.debit_amount || 0) - parseFloat(entry.credit_amount || 0);
+      balance += parseFloat(entry.credit_amount || 0) - parseFloat(entry.debit_amount || 0);
       return { ...entry, running_balance: balance };
     });
   };
@@ -292,17 +418,17 @@ const LabourLedgerTab = () => {
     ? entriesWithBalance[entriesWithBalance.length - 1].running_balance
     : 0;
 
-  const selectedLabour = labours.find((l) => l.id === selectedLabourId);
+  const selectedSupplier = suppliers.find((s) => s.id === selectedSupplierId);
 
   const exportToCSV = () => {
-    if (!selectedLabour) {
-      toast.error('Please select a labourer first');
+    if (!selectedSupplier) {
+      toast.error('Please select a supplier first');
       return;
     }
 
-    const headers = ['Date', 'Particulars', 'Skill', 'Ref No', 'Debit', 'Credit', 'Balance'];
+    const headers = ['Date', 'Particulars', 'Category', 'Ref No', 'Debit', 'Credit', 'Balance'];
     const csvContent = [
-      `Labour Ledger - ${selectedLabour.name}`,
+      `Supplier Ledger - ${selectedSupplier.name}`,
       `Period: ${filters.startDate || 'All'} to ${filters.endDate || 'All'}`,
       '',
       headers.join(','),
@@ -310,7 +436,7 @@ const LabourLedgerTab = () => {
         [
           e.entry_date,
           e.particulars,
-          e.skill_type || '',
+          e.category || '',
           e.reference_no || '',
           e.debit_amount || 0,
           e.credit_amount || 0,
@@ -325,25 +451,26 @@ const LabourLedgerTab = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `labour_ledger_${selectedLabour.name}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `supplier_ledger_${selectedSupplier.name}_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     toast.success('Ledger exported to CSV');
   };
 
   const saveToPDF = () => {
-    if (!selectedLabour) {
-      toast.error('Please select a labourer first');
+    if (!selectedSupplier) {
+      toast.error('Please select a supplier first');
       return;
     }
 
     const doc = new jsPDF();
     doc.setFontSize(16);
-    doc.text(`Labour Ledger - ${selectedLabour.name}`, 14, 15);
+    doc.text(`Supplier Ledger - ${selectedSupplier.name}`, 14, 15);
     doc.setFontSize(10);
-    doc.text(`Period: ${filters.startDate || 'All'} to ${filters.endDate || 'All'}`, 14, 22);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 27);
+    doc.text(`Category: ${selectedSupplier.category || 'N/A'}`, 14, 22);
+    doc.text(`Period: ${filters.startDate || 'All'} to ${filters.endDate || 'All'}`, 14, 27);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 32);
 
-    let yPos = 35;
+    let yPos = 40;
     doc.setFontSize(9);
     doc.text('Date', 14, yPos);
     doc.text('Particulars', 40, yPos);
@@ -369,7 +496,7 @@ const LabourLedgerTab = () => {
     doc.setFontSize(11);
     doc.text(`Final Balance: ₹${currentBalance.toFixed(2)}`, 14, yPos);
 
-    doc.save(`labour_ledger_${selectedLabour.name}_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`supplier_ledger_${selectedSupplier.name}_${new Date().toISOString().split('T')[0]}.pdf`);
     toast.success('Ledger saved as PDF');
   };
 
@@ -389,12 +516,30 @@ const LabourLedgerTab = () => {
         title={editingEntry ? 'Edit Manual Entry' : 'Add Manual Entry'}
       >
         <ManualEntryForm
-          labourId={selectedLabourId}
+          supplierId={selectedSupplierId}
           entry={editingEntry}
           onSave={editingEntry ? handleEditEntry : handleAddEntry}
           onCancel={() => {
             setIsModalOpen(false);
             setEditingEntry(null);
+          }}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={isDocumentModalOpen}
+        onClose={() => {
+          setIsDocumentModalOpen(false);
+          setSelectedDocument({ id: null, type: null });
+        }}
+        title="Document Details"
+      >
+        <DocumentDetailsModal
+          documentId={selectedDocument.id}
+          documentType={selectedDocument.type}
+          onClose={() => {
+            setIsDocumentModalOpen(false);
+            setSelectedDocument({ id: null, type: null });
           }}
         />
       </Modal>
@@ -412,17 +557,17 @@ const LabourLedgerTab = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-                Select Labourer *
+                Select Supplier *
               </label>
               <select
-                value={selectedLabourId}
-                onChange={(e) => setSelectedLabourId(e.target.value)}
+                value={selectedSupplierId}
+                onChange={(e) => setSelectedSupplierId(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
               >
-                <option value="">-- Choose Labourer --</option>
-                {labours.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.name} {l.skill_type ? `(${l.skill_type})` : ''}
+                <option value="">-- Choose Supplier --</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} {s.category ? `(${s.category})` : ''}
                   </option>
                 ))}
               </select>
@@ -454,15 +599,15 @@ const LabourLedgerTab = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1">
-                Search Skill
+                Search Category
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  value={filters.skillSearch}
-                  onChange={(e) => setFilters({ ...filters, skillSearch: e.target.value })}
-                  placeholder="e.g., Welder"
+                  value={filters.categorySearch}
+                  onChange={(e) => setFilters({ ...filters, categorySearch: e.target.value })}
+                  placeholder="e.g., Hardware"
                   className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
                 />
               </div>
@@ -472,49 +617,55 @@ const LabourLedgerTab = () => {
           <div className="flex flex-wrap items-center gap-2">
             <Button
               onClick={() => {
-                if (!selectedLabourId) {
-                  toast.error('Please select a labourer first');
+                if (!selectedSupplierId) {
+                  toast.error('Please select a supplier first');
                   return;
                 }
                 setIsModalOpen(true);
               }}
-              disabled={!selectedLabourId}
+              disabled={!selectedSupplierId}
             >
               <PlusCircle className="h-4 w-4 mr-2" />
               Add Manual Entry
             </Button>
 
-            <Button variant="secondary" onClick={exportToCSV} disabled={!selectedLabourId}>
+            <Button variant="secondary" onClick={exportToCSV} disabled={!selectedSupplierId}>
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
 
-            <Button variant="secondary" onClick={saveToPDF} disabled={!selectedLabourId}>
+            <Button variant="secondary" onClick={saveToPDF} disabled={!selectedSupplierId}>
               <FileText className="h-4 w-4 mr-2" />
               Save PDF
             </Button>
 
-            <Button variant="secondary" onClick={handlePrint} disabled={!selectedLabourId}>
+            <Button variant="secondary" onClick={handlePrint} disabled={!selectedSupplierId}>
               <Printer className="h-4 w-4 mr-2" />
               Print
             </Button>
           </div>
 
-          {selectedLabour && (
+          {selectedSupplier && (
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-600 dark:text-dark-text-secondary">Labourer</p>
-                  <p className="font-semibold text-gray-900 dark:text-dark-text">{selectedLabour.name}</p>
+                  <p className="text-gray-600 dark:text-dark-text-secondary">Supplier</p>
+                  <p className="font-semibold text-gray-900 dark:text-dark-text">{selectedSupplier.name}</p>
                 </div>
                 <div>
                   <p className="text-gray-600 dark:text-dark-text-secondary">Phone</p>
-                  <p className="font-semibold text-gray-900 dark:text-dark-text">{selectedLabour.phone || '-'}</p>
+                  <p className="font-semibold text-gray-900 dark:text-dark-text">{selectedSupplier.phone || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-gray-600 dark:text-dark-text-secondary">Skill</p>
+                  <p className="text-gray-600 dark:text-dark-text-secondary">Category</p>
                   <p className="font-semibold text-gray-900 dark:text-dark-text">
-                    {selectedLabour.skill_type || '-'}
+                    {selectedSupplier.category || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-600 dark:text-dark-text-secondary">Company</p>
+                  <p className="font-semibold text-gray-900 dark:text-dark-text">
+                    {selectedSupplier.company || '-'}
                   </p>
                 </div>
                 <div>
@@ -527,7 +678,7 @@ const LabourLedgerTab = () => {
                     }`}
                   >
                     ₹{Math.abs(currentBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                    {currentBalance > 0 ? ' (Payable)' : ' (Paid)'}
+                    {currentBalance > 0 ? ' (Owe)' : ' (Paid)'}
                   </p>
                 </div>
               </div>
@@ -539,10 +690,10 @@ const LabourLedgerTab = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-red"></div>
               <span className="ml-3 text-gray-600 dark:text-dark-text-secondary">Loading entries...</span>
             </div>
-          ) : !selectedLabourId ? (
+          ) : !selectedSupplierId ? (
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-dark-text-secondary">
-                Please select a labourer to view their ledger entries
+                Please select a supplier to view their ledger entries
               </p>
             </div>
           ) : (
@@ -553,7 +704,7 @@ const LabourLedgerTab = () => {
                     <tr>
                       <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Date</th>
                       <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Particulars</th>
-                      <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Skill</th>
+                      <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Category</th>
                       <th className="p-3 font-semibold text-gray-700 dark:text-gray-300">Ref No</th>
                       <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Debit</th>
                       <th className="p-3 font-semibold text-gray-700 dark:text-gray-300 text-right">Credit</th>
@@ -573,10 +724,20 @@ const LabourLedgerTab = () => {
                           </td>
                           <td className="p-3 text-gray-900 dark:text-dark-text">{entry.particulars}</td>
                           <td className="p-3 text-gray-700 dark:text-dark-text-secondary">
-                            {entry.skill_type || '-'}
+                            {entry.category || '-'}
                           </td>
-                          <td className="p-3 text-gray-700 dark:text-dark-text-secondary">
-                            {entry.reference_no || '-'}
+                          <td className="p-3">
+                            {entry.reference_no ? (
+                              <button
+                                onClick={() => openDocumentModal(entry)}
+                                className="flex items-center text-blue-600 dark:text-blue-400 hover:underline"
+                              >
+                                {entry.reference_no}
+                                <ExternalLink className="h-3 w-3 ml-1" />
+                              </button>
+                            ) : (
+                              '-'
+                            )}
                           </td>
                           <td className="p-3 text-right text-red-600 dark:text-red-400 font-medium">
                             {parseFloat(entry.debit_amount || 0) > 0
@@ -647,7 +808,7 @@ const LabourLedgerTab = () => {
                       ₹{Math.abs(currentBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-dark-text-secondary">
-                      {currentBalance > 0 ? 'Amount Payable' : 'Amount in Credit'}
+                      {currentBalance > 0 ? 'Amount You Owe' : 'Amount Overpaid'}
                     </p>
                   </div>
                 </div>
@@ -660,4 +821,4 @@ const LabourLedgerTab = () => {
   );
 };
 
-export default LabourLedgerTab;
+export default SupplierLedgerTab;

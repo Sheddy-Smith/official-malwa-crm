@@ -1,134 +1,321 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
-const useJobsStore = create(
-  persist(
-    (set) => ({
-      jobs: {}, // Using an object to store jobs by ID
-      
-      createNewJob: (jobData) => set((state) => {
-        const jobId = uuidv4();
-        const newJob = {
-            id: jobId,
-            ...jobData,
-            status: 'Inspection', // Inspection -> Estimate -> JobSheet -> Challan -> Invoice
-            inspection: { items: [], photos: [] },
-            estimate: {
-              items: [],
-              discountAmount: 0,
-              gstRate: 18,
-              approvalNeeded: false,
-              status: 'Draft' // Draft -> Pending Approval -> Approved
-            },
-            jobSheet: { items: [], extraWork: [], finalized: false },
-            chalan: null,
-            invoice: null,
-            createdAt: new Date().toISOString(),
-        };
-        return { jobs: { ...state.jobs, [jobId]: newJob } };
-      }),
-      
-      updateJobDetails: (jobId, details) => set(state => {
-        const job = state.jobs[jobId];
-        if (!job) return state;
-        const updatedJob = { ...job, ...details };
-        return { jobs: { ...state.jobs, [jobId]: updatedJob } };
-      }),
+const useJobsStore = create((set, get) => ({
+  jobs: [],
+  loading: false,
+  error: null,
+  currentJobId: null,
 
-      // --- Inspection Methods ---
-      addInspectionItem: (jobId, item) => set((state) => {
-        const job = state.jobs[jobId];
-        if (!job) return state;
-        const newItem = { id: uuidv4(), ...item };
-        const updatedJob = { ...job, inspection: { ...job.inspection, items: [...job.inspection.items, newItem] } };
-        return { jobs: { ...state.jobs, [jobId]: updatedJob } };
-      }),
-      updateInspectionItem: (jobId, updatedItem) => set((state) => {
-        const job = state.jobs[jobId];
-        if (!job) return state;
-        const updatedItems = job.inspection.items.map(item => item.id === updatedItem.id ? updatedItem : item);
-        const updatedJob = { ...job, inspection: { ...job.inspection, items: updatedItems } };
-        return { jobs: { ...state.jobs, [jobId]: updatedJob } };
-      }),
-      deleteInspectionItem: (jobId, itemId) => set((state) => {
-        const job = state.jobs[jobId];
-        if (!job) return state;
-        const filteredItems = job.inspection.items.filter(item => item.id !== itemId);
-        const updatedJob = { ...job, inspection: { ...job.inspection, items: filteredItems } };
-        return { jobs: { ...state.jobs, [jobId]: updatedJob } };
-      }),
+  fetchJobs: async () => {
+    set({ loading: true, error: null });
+    try {
+      const { data, error } = await supabase
+        .from('customer_jobs')
+        .select(`
+          *,
+          customers (
+            id,
+            name,
+            company,
+            phone,
+            gstin
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-      // --- Estimate Methods ---
-      generateEstimateFromInspection: (jobId) => set((state) => {
-        const job = state.jobs[jobId];
-        if (!job || !job.inspection.items) return state;
-
-        const multipliers = { Parts: 1.5, Labour: 2, Hardware: 2, Steel: 1.5 };
-
-        const estimateItems = job.inspection.items.map(item => {
-            const multiplier = multipliers[item.category] || 1;
-            const finalRate = item.cost * multiplier;
-            return {
-                id: uuidv4(), 
-                description: item.item,
-                qty: 1,
-                rate: finalRate, // Price with margin
-                originalCost: parseFloat(item.cost), // Store original cost for JobSheet
-                category: item.category,
-            }
-        });
-        const updatedJob = { ...job, estimate: { ...job.estimate, items: estimateItems } };
-        return { jobs: { ...state.jobs, [jobId]: updatedJob }};
-      }),
-
-      updateEstimateItem: (jobId, updatedItem) => set((state) => {
-        const job = state.jobs[jobId];
-        if (!job) return state;
-        const updatedItems = job.estimate.items.map(item => item.id === updatedItem.id ? updatedItem : item);
-        const updatedJob = { ...job, estimate: { ...job.estimate, items: updatedItems } };
-        return { jobs: { ...state.jobs, [jobId]: updatedJob } };
-      }),
-
-      updateEstimateTotals: (jobId, newTotals) => set(state => {
-        const job = state.jobs[jobId];
-        if (!job) return state;
-        const subTotal = job.estimate.items.reduce((acc, item) => acc + (item.qty * item.rate), 0);
-        const discountAmount = newTotals.discountAmount || 0;
-        const discountPercent = subTotal > 0 ? (discountAmount / subTotal) * 100 : 0;
-
-        const approvalNeeded = discountPercent > 5;
-
-        const updatedJob = { ...job, estimate: { ...job.estimate, ...newTotals, approvalNeeded } };
-        return { jobs: { ...state.jobs, [jobId]: updatedJob } };
-      }),
-
-      approveEstimate: (jobId) => set(state => {
-          const job = state.jobs[jobId];
-          if(!job) return state;
-          const updatedEstimate = { ...job.estimate, approvalNeeded: false, status: 'Approved' };
-          const updatedJob = { ...job, estimate: updatedEstimate };
-          return { jobs: { ...state.jobs, [jobId]: updatedJob } };
-      }),
-
-    }),
-    {
-      name: 'jobs-storage',
+      if (error) throw error;
+      set({ jobs: data || [], loading: false });
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      console.error('Error fetching jobs:', error);
     }
-  )
-);
+  },
 
-export const initializeDefaultJob = () => {
-    const { jobs, createNewJob } = useJobsStore.getState();
-    if (Object.keys(jobs).length === 0) {
-        console.log("No jobs found, creating a default job for demonstration.");
-        createNewJob({
-            vehicleNo: 'PB08-DEMO',
-            ownerName: 'Default Owner',
-            branch: 'Head Office',
-            inspectionDate: new Date().toISOString().split('T')[0],
-        });
+  fetchJobById: async (jobId) => {
+    set({ loading: true, error: null });
+    try {
+      const { data, error } = await supabase
+        .from('customer_jobs')
+        .select(`
+          *,
+          customers (
+            id,
+            name,
+            company,
+            phone,
+            gstin
+          )
+        `)
+        .eq('id', jobId)
+        .maybeSingle();
+
+      if (error) throw error;
+      set({ loading: false });
+      return data;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      console.error('Error fetching job:', error);
+      return null;
     }
-};
+  },
+
+  createNewJob: async (jobData) => {
+    set({ loading: true, error: null });
+    try {
+      const newJob = {
+        id: uuidv4(),
+        job_no: `JOB-${Date.now()}`,
+        customer_id: jobData.customerId,
+        vehicle_no: jobData.vehicleNo,
+        owner_name: jobData.ownerName,
+        branch: jobData.branch || 'Head Office',
+        status: 'inspection',
+        job_date: jobData.inspectionDate || new Date().toISOString().split('T')[0],
+        inspection_data: { items: [], details: {} },
+        estimate_data: { items: [], discount: 0, gst_rate: 18 },
+        jobsheet_data: { items: [], extraWork: [], finalized: false },
+        chalan_data: null,
+        invoice_data: null,
+        total_amount: 0,
+        created_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('customer_jobs')
+        .insert([newJob])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set(state => ({
+        jobs: [data, ...state.jobs],
+        currentJobId: data.id,
+        loading: false
+      }));
+
+      return data;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      console.error('Error creating job:', error);
+      return null;
+    }
+  },
+
+  updateJobDetails: async (jobId, updates) => {
+    set({ loading: true, error: null });
+    try {
+      const { data, error } = await supabase
+        .from('customer_jobs')
+        .update(updates)
+        .eq('id', jobId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      set(state => ({
+        jobs: state.jobs.map(job => job.id === jobId ? data : job),
+        loading: false
+      }));
+
+      return data;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      console.error('Error updating job:', error);
+      return null;
+    }
+  },
+
+  updateInspectionData: async (jobId, inspectionData) => {
+    return get().updateJobDetails(jobId, {
+      inspection_data: inspectionData,
+      status: 'inspection'
+    });
+  },
+
+  updateEstimateData: async (jobId, estimateData) => {
+    return get().updateJobDetails(jobId, {
+      estimate_data: estimateData,
+      status: 'estimate'
+    });
+  },
+
+  updateJobSheetData: async (jobId, jobsheetData) => {
+    return get().updateJobDetails(jobId, {
+      jobsheet_data: jobsheetData,
+      status: 'jobsheet'
+    });
+  },
+
+  finalizeJobSheet: async (jobId, jobsheetData) => {
+    set({ loading: true, error: null });
+    try {
+      const job = await get().fetchJobById(jobId);
+      if (!job) throw new Error('Job not found');
+
+      const allItems = [
+        ...(jobsheetData.items || []),
+        ...(jobsheetData.extraWork || [])
+      ];
+
+      for (const item of allItems) {
+        if (item.workBy === 'Labour' && item.labourId) {
+          const amount = parseFloat(item.cost) * parseFloat(item.multiplier || 1);
+          await supabase.from('labour_ledger_entries').insert({
+            labour_id: item.labourId,
+            date: new Date().toISOString().split('T')[0],
+            type: 'debit',
+            description: `Job ${job.job_no} - ${item.item}`,
+            amount: amount,
+            reference_type: 'job',
+            reference_id: jobId
+          });
+        }
+
+        if (item.workBy === 'Vendor' && item.vendorId) {
+          const amount = parseFloat(item.cost) * parseFloat(item.multiplier || 1);
+          await supabase.from('vendor_ledger_entries').insert({
+            vendor_id: item.vendorId,
+            date: new Date().toISOString().split('T')[0],
+            type: 'debit',
+            description: `Job ${job.job_no} - ${item.item}`,
+            amount: amount,
+            reference_type: 'job',
+            reference_id: jobId
+          });
+        }
+
+        if (item.inventoryItemId) {
+          await supabase.from('stock_movements').insert({
+            item_id: item.inventoryItemId,
+            movement_type: 'out',
+            quantity: parseFloat(item.quantity || 1),
+            reference_type: 'job',
+            reference_id: jobId,
+            notes: `Used in Job ${job.job_no}`
+          });
+        }
+      }
+
+      const updatedJobsheet = { ...jobsheetData, finalized: true };
+      await get().updateJobDetails(jobId, {
+        jobsheet_data: updatedJobsheet,
+        status: 'jobsheet'
+      });
+
+      set({ loading: false });
+      return true;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      console.error('Error finalizing job sheet:', error);
+      return false;
+    }
+  },
+
+  updateChalanData: async (jobId, chalanData) => {
+    return get().updateJobDetails(jobId, {
+      chalan_data: chalanData,
+      status: 'chalan'
+    });
+  },
+
+  createInvoice: async (jobId, invoiceData) => {
+    set({ loading: true, error: null });
+    try {
+      const job = await get().fetchJobById(jobId);
+      if (!job) throw new Error('Job not found');
+
+      const invoiceId = uuidv4();
+      const invoiceNo = `INV-${Date.now()}`;
+
+      const invoice = {
+        id: invoiceId,
+        invoice_no: invoiceNo,
+        customer_id: job.customer_id,
+        invoice_date: invoiceData.invoiceDate || new Date().toISOString().split('T')[0],
+        due_date: invoiceData.dueDate,
+        subtotal: invoiceData.subtotal,
+        gst_rate: invoiceData.gstRate,
+        gst_amount: invoiceData.gstAmount,
+        discount_amount: invoiceData.discountAmount || 0,
+        total_amount: invoiceData.totalAmount,
+        payment_status: 'pending',
+        items: invoiceData.items,
+        notes: invoiceData.notes
+      };
+
+      const { error: invoiceError } = await supabase
+        .from('invoices')
+        .insert([invoice]);
+
+      if (invoiceError) throw invoiceError;
+
+      await supabase.from('customer_ledger_entries').insert({
+        customer_id: job.customer_id,
+        date: invoice.invoice_date,
+        type: 'debit',
+        description: `Invoice ${invoiceNo} - Job ${job.job_no}`,
+        amount: invoice.total_amount,
+        reference_type: 'invoice',
+        reference_id: invoiceId
+      });
+
+      if (invoiceData.gstAmount > 0) {
+        await supabase.from('gst_ledger').insert({
+          date: invoice.invoice_date,
+          type: 'output',
+          invoice_no: invoiceNo,
+          customer_supplier: job.customers?.name || job.owner_name,
+          gstin: job.customers?.gstin,
+          taxable_amount: invoice.subtotal,
+          gst_rate: invoice.gst_rate,
+          gst_amount: invoice.gst_amount,
+          total_amount: invoice.total_amount
+        });
+      }
+
+      await get().updateJobDetails(jobId, {
+        invoice_data: { invoiceId, invoiceNo, ...invoiceData },
+        status: 'completed',
+        total_amount: invoice.total_amount
+      });
+
+      set({ loading: false });
+      return invoice;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      console.error('Error creating invoice:', error);
+      return null;
+    }
+  },
+
+  deleteJob: async (jobId) => {
+    set({ loading: true, error: null });
+    try {
+      const { error } = await supabase
+        .from('customer_jobs')
+        .delete()
+        .eq('id', jobId);
+
+      if (error) throw error;
+
+      set(state => ({
+        jobs: state.jobs.filter(job => job.id !== jobId),
+        loading: false
+      }));
+
+      return true;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      console.error('Error deleting job:', error);
+      return false;
+    }
+  },
+
+  setCurrentJobId: (jobId) => set({ currentJobId: jobId }),
+}));
 
 export default useJobsStore;
