@@ -38,6 +38,7 @@ const InspectionStep = ({ jobId }) => {
 
   useEffect(() => {
     loadJob();
+    loadFromLocalStorage();
   }, [jobId]);
 
   const loadJob = async () => {
@@ -50,7 +51,13 @@ const InspectionStep = ({ jobId }) => {
         inspectionDate: jobData.job_date || new Date().toISOString().split('T')[0],
         branch: jobData.branch || 'Head Office'
       });
-      setItems(jobData.inspection_data?.items || []);
+    }
+  };
+
+  const loadFromLocalStorage = () => {
+    const savedItems = localStorage.getItem('inspectionItems');
+    if (savedItems) {
+      setItems(JSON.parse(savedItems));
     }
   };
 
@@ -86,7 +93,7 @@ const InspectionStep = ({ jobId }) => {
     setEditingId(item.id);
   };
 
-  const handleSaveItem = async (item) => {
+  const handleSaveItem = (item) => {
     if (!item.item || !item.category || !item.condition || parseFloat(item.cost) <= 0) {
       alert('Please fill all required fields with valid data');
       return;
@@ -102,11 +109,7 @@ const InspectionStep = ({ jobId }) => {
 
     const updatedItems = items.map(i => i.id === item.id ? updatedItem : i);
     setItems(updatedItems);
-
-    await updateInspectionData(jobId, {
-      items: updatedItems,
-      details: vehicleDetails
-    });
+    localStorage.setItem('inspectionItems', JSON.stringify(updatedItems));
 
     setEditingId(null);
   };
@@ -118,15 +121,11 @@ const InspectionStep = ({ jobId }) => {
     setEditingId(null);
   };
 
-  const handleDeleteItem = async (itemId) => {
+  const handleDeleteItem = (itemId) => {
     if (confirm('Are you sure you want to delete this item?')) {
       const updatedItems = items.filter(i => i.id !== itemId);
       setItems(updatedItems);
-
-      await updateInspectionData(jobId, {
-        items: updatedItems,
-        details: vehicleDetails
-      });
+      localStorage.setItem('inspectionItems', JSON.stringify(updatedItems));
     }
   };
 
@@ -291,7 +290,7 @@ const InspectionStep = ({ jobId }) => {
         <div className="mt-4">
           <Button onClick={handleSaveDetails} disabled={loading}>
             <Save className="h-4 w-4 mr-2" />
-            Save Vehicle Details
+            Save Details
           </Button>
         </div>
       </Card>

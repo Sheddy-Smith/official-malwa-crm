@@ -43,11 +43,15 @@ const ChalanStep = ({ jobId }) => {
 
   if (!job) return <div className="text-center py-12 text-gray-500 dark:text-dark-text-secondary">Loading challan...</div>;
 
-  const items = job.jobsheet_data?.items || [];
-  const extraWork = job.jobsheet_data?.extraWork || [];
+  const savedJobSheetEstimate = localStorage.getItem('jobSheetEstimate');
+  const savedExtraWork = localStorage.getItem('extraWork');
+  const savedDiscount = localStorage.getItem('estimateDiscount');
+
+  const items = savedJobSheetEstimate ? JSON.parse(savedJobSheetEstimate) : [];
+  const extraWork = savedExtraWork ? JSON.parse(savedExtraWork) : [];
   const inspectionSubtotal = items.reduce((sum, item) => sum + (parseFloat(item.cost || 0) * parseFloat(item.multiplier || 1)), 0);
   const extraWorkSubtotal = extraWork.reduce((sum, work) => sum + (parseFloat(work.cost || 0) * parseFloat(work.multiplier || 1)), 0);
-  const estimateDiscount = parseFloat(job.estimate_data?.discount || 0);
+  const estimateDiscount = savedDiscount ? parseFloat(savedDiscount) : 0;
   const grandTotal = inspectionSubtotal + extraWorkSubtotal - estimateDiscount;
 
   return (

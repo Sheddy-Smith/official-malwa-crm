@@ -28,6 +28,7 @@ const JobSheetStep = ({ jobId }) => {
 
   useEffect(() => {
     loadJob();
+    loadFromLocalStorage();
     fetchLabour();
     fetchVendors();
   }, [jobId]);
@@ -36,32 +37,46 @@ const JobSheetStep = ({ jobId }) => {
     const jobData = await fetchJobById(jobId);
     if (jobData) {
       setJob(jobData);
+    }
+  };
 
-      const items = (jobData.inspection_data?.items || []).map(item => ({
+  const loadFromLocalStorage = () => {
+    const savedEstimateItems = localStorage.getItem('inspectionItems');
+    const savedJobSheetEstimate = localStorage.getItem('jobSheetEstimate');
+    const savedExtraWork = localStorage.getItem('extraWork');
+
+    if (savedJobSheetEstimate) {
+      setInspectionItems(JSON.parse(savedJobSheetEstimate));
+    } else if (savedEstimateItems) {
+      const items = JSON.parse(savedEstimateItems).map(item => ({
         ...item,
-        workBy: item.workBy || '',
-        labourId: item.labourId || '',
-        vendorId: item.vendorId || '',
-        notes: item.notes || ''
+        workBy: '',
+        labourId: '',
+        vendorId: '',
+        notes: ''
       }));
+      setInspectionItems(items);
+    }
 
-      setInspectionItems(jobData.jobsheet_data?.items || items);
-      setExtraWork(jobData.jobsheet_data?.extraWork || []);
+    if (savedExtraWork) {
+      setExtraWork(JSON.parse(savedExtraWork));
     }
   };
 
   const handleInspectionItemChange = (itemId, field, value) => {
-    setInspectionItems(items => items.map(item => {
+    const updated = inspectionItems.map(item => {
       if (item.id === itemId) {
-        const updated = { ...item, [field]: value };
+        const updatedItem = { ...item, [field]: value };
         if (field === 'workBy') {
-          updated.labourId = '';
-          updated.vendorId = '';
+          updatedItem.labourId = '';
+          updatedItem.vendorId = '';
         }
-        return updated;
+        return updatedItem;
       }
       return item;
-    }));
+    });
+    setInspectionItems(updated);
+    localStorage.setItem('jobSheetEstimate', JSON.stringify(updated));
   };
 
   const handleAddExtraWork = () => {
@@ -82,31 +97,38 @@ const JobSheetStep = ({ jobId }) => {
   };
 
   const handleExtraWorkChange = (workId, field, value) => {
-    setExtraWork(works => works.map(work => {
+    const updated = extraWork.map(work => {
       if (work.id === workId) {
-        const updated = { ...work, [field]: value };
+        const updatedWork = { ...work, [field]: value };
         if (field === 'workBy') {
-          updated.labourId = '';
-          updated.vendorId = '';
+          updatedWork.labourId = '';
+          updatedWork.vendorId = '';
         }
         if (field === 'cost' || field === 'multiplier') {
-          const cost = parseFloat(updated.cost || 0);
-          const multiplier = parseFloat(updated.multiplier || 1);
-          updated.total = cost * multiplier;
+          const cost = parseFloat(updatedWork.cost || 0);
+          const multiplier = parseFloat(updatedWork.multiplier || 1);
+          updatedWork.total = cost * multiplier;
         }
-        return updated;
+        return updatedWork;
       }
       return work;
-    }));
+    });
+    setExtraWork(updated);
+    localStorage.setItem('extraWork', JSON.stringify(updated));
   };
 
   const handleDeleteExtraWork = (workId) => {
     if (confirm('Are you sure you want to delete this extra work item?')) {
-      setExtraWork(extraWork.filter(w => w.id !== workId));
+      const updated = extraWork.filter(w => w.id !== workId);
+      setExtraWork(updated);
+      localStorage.setItem('extraWork', JSON.stringify(updated));
     }
   };
 
   const handleSaveJobSheet = async () => {
+    localStorage.setItem('jobSheetEstimate', JSON.stringify(inspectionItems));
+    localStorage.setItem('extraWork', JSON.stringify(extraWork.filter(w => w.item && w.cost > 0)));
+
     setLoading(true);
     const jobsheetData = {
       items: inspectionItems,
@@ -200,7 +222,8 @@ const JobSheetStep = ({ jobId }) => {
 
   const inspectionSubtotal = calculateSubtotal(inspectionItems);
   const extraWorkSubtotal = calculateSubtotal(extraWork);
-  const estimateDiscount = parseFloat(job?.estimate_data?.discount || 0);
+  const savedDiscount = localStorage.getItem('estimateDiscount');
+  const estimateDiscount = savedDiscount ? parseFloat(savedDiscount) : 0;
   const grandTotal = inspectionSubtotal + extraWorkSubtotal;
   const finalTotal = grandTotal - estimateDiscount;
   const isFinalized = job?.jobsheet_data?.finalized || false;

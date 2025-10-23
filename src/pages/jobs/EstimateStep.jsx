@@ -15,17 +15,29 @@ const EstimateStep = ({ jobId }) => {
 
   useEffect(() => {
     loadJob();
+    loadFromLocalStorage();
   }, [jobId]);
 
   const loadJob = async () => {
     const jobData = await fetchJobById(jobId);
     if (jobData) {
       setJob(jobData);
-      setDiscount(jobData.estimate_data?.discount || 0);
     }
   };
 
-  const inspectionItems = job?.inspection_data?.items || [];
+  const loadFromLocalStorage = () => {
+    const savedDiscount = localStorage.getItem('estimateDiscount');
+    if (savedDiscount) {
+      setDiscount(parseFloat(savedDiscount));
+    }
+  };
+
+  const getInspectionItems = () => {
+    const savedItems = localStorage.getItem('inspectionItems');
+    return savedItems ? JSON.parse(savedItems) : [];
+  };
+
+  const inspectionItems = getInspectionItems();
 
   const subtotal = inspectionItems.reduce((sum, item) => {
     return sum + (parseFloat(item.cost || 0) * parseFloat(item.multiplier || 1));
@@ -37,6 +49,8 @@ const EstimateStep = ({ jobId }) => {
   const approvalNeeded = discountPercent > 5;
 
   const handleSaveEstimate = async () => {
+    localStorage.setItem('estimateDiscount', discountAmount.toString());
+
     setLoading(true);
     const estimateData = {
       items: inspectionItems.map(item => ({
