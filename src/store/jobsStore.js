@@ -119,9 +119,15 @@ const useJobsStore = create(
 );
 
 export const initializeDefaultJob = () => {
-    const { jobs } = useJobsStore.getState();
+    const { jobs, createNewJob } = useJobsStore.getState();
     if (Object.keys(jobs).length === 0) {
-        // No default job needed - users will create their own
+        console.log("No jobs found, creating a default job for demonstration.");
+        createNewJob({
+            vehicleNo: 'PB08-DEMO',
+            ownerName: 'Default Owner',
+            branch: 'Head Office',
+            inspectionDate: new Date().toISOString().split('T')[0],
+        });
     }
 };
 
