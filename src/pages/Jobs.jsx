@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Eye } from 'lucide-react';
+import { Plus, Search, Eye, FileText, Calculator, Wrench, Package, Receipt } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import TabbedPage from '@/components/TabbedPage';
 import InspectionStep from './jobs/InspectionStep';
 import EstimateStep from './jobs/EstimateStep';
 import JobSheetStep from './jobs/JobSheetStep';
+import ChalanStep from './jobs/ChalanStep';
+import InvoiceStep from './jobs/InvoiceStep';
 import useJobsStore from '@/store/jobsStore';
 import useCustomerStore from '@/store/customerStore';
 
 const statusColors = {
   inspection: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
   estimate: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  jobsheet: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  jobsheet: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  challan: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
   completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
 };
 
@@ -82,23 +85,38 @@ const Jobs = () => {
       {
         id: 'inspection',
         label: 'Inspection',
-        component: <InspectionStep jobId={selectedJob.id} onBack={handleBackToList} />
+        icon: FileText,
+        component: <InspectionStep jobId={selectedJob.id} onBack={handleBackToList} onRefresh={() => fetchJobs()} />
       },
       {
         id: 'estimate',
         label: 'Estimate',
-        component: <EstimateStep jobId={selectedJob.id} onBack={handleBackToList} />
+        icon: Calculator,
+        component: <EstimateStep jobId={selectedJob.id} onBack={handleBackToList} onRefresh={() => fetchJobs()} />
       },
       {
         id: 'jobsheet',
         label: 'Job Sheet',
-        component: <JobSheetStep jobId={selectedJob.id} onBack={handleBackToList} />
+        icon: Wrench,
+        component: <JobSheetStep jobId={selectedJob.id} onBack={handleBackToList} onRefresh={() => fetchJobs()} />
+      },
+      {
+        id: 'challan',
+        label: 'Challan',
+        icon: Package,
+        component: <ChalanStep jobId={selectedJob.id} onBack={handleBackToList} onRefresh={() => fetchJobs()} />
+      },
+      {
+        id: 'invoice',
+        label: 'Invoice',
+        icon: Receipt,
+        component: <InvoiceStep jobId={selectedJob.id} onBack={handleBackToList} onRefresh={() => fetchJobs()} />
       }
     ];
 
     return (
       <TabbedPage
-        title={`Job: ${selectedJob.job_no}`}
+        title={`Job: ${selectedJob.job_no} - ${selectedJob.vehicle_no}`}
         tabs={tabs}
         onBack={handleBackToList}
       />
@@ -112,7 +130,7 @@ const Jobs = () => {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-text">Jobs</h2>
             <p className="text-sm text-gray-500 dark:text-dark-text-secondary mt-1">
-              Manage vehicle inspection, estimates, and job sheets
+              Complete workflow: Inspection → Estimate → Job Sheet → Challan → Invoice
             </p>
           </div>
           <Button onClick={() => setShowNewJobModal(true)}>
@@ -142,6 +160,7 @@ const Jobs = () => {
               <option value="inspection">Inspection</option>
               <option value="estimate">Estimate</option>
               <option value="jobsheet">Job Sheet</option>
+              <option value="challan">Challan</option>
               <option value="completed">Completed</option>
             </select>
           </div>
