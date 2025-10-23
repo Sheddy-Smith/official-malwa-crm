@@ -1,267 +1,137 @@
-import { useState, useEffect } from 'react';
-import { Download, Printer, AlertTriangle } from 'lucide-react';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import useJobsStore from '@/store/jobsStore';
-import jsPDF from 'jspdf';
+ // correct code 
+import { useEffect, useState } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
-const EstimateStep = ({ jobId }) => {
-  const [job, setJob] = useState(null);
-  const [discount, setDiscount] = useState(0);
-  const [loading, setLoading] = useState(false);
+const EstimateStep = () => {
+  // LocalStorage se inspection items load karo
+  const [items] = useState(() => {
+    const saved = localStorage.getItem("inspectionItems");
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  const fetchJobById = useJobsStore(state => state.fetchJobById);
-  const updateEstimateData = useJobsStore(state => state.updateEstimateData);
+  // LocalStorage se discount load karo
+  const [discount, setDiscount] = useState(() => {
+    const saved = localStorage.getItem("estimateDiscount");
+    return saved ? parseFloat(saved) : 0;
+  });
 
+  // Default multipliers (agar manual multiplier na diya gaya ho)
+  const defaultMultipliers = {
+    Hardware: 2,
+    Steel: 1.5,
+    Labour: 2,
+    Parts: 1.5,
+  };
+
+  // Har item ka total nikalne ka function (manual multiplier support ke sath)
+  const calculateTotal = (item) => {
+    const cost = parseFloat(item.cost) || 0;
+    // manual multiplier (agar InspectionStep me user ne diya ho)
+    const customMultiplier = parseFloat(item.multiplier) || null;
+    const categoryMultiplier = defaultMultipliers[item.category?.trim()] || 1;
+    const finalMultiplier = customMultiplier ?? categoryMultiplier; // agar custom hai to wahi lo
+    return cost * finalMultiplier;
+  };
+
+  // Subtotal aur Discount ke baad total
+  const subTotal = items.reduce((acc, item) => acc + calculateTotal(item), 0);
+  const totalAfterDiscount = subTotal - (parseFloat(discount) || 0);
+
+  // Jab discount change ho to localStorage me save karo
   useEffect(() => {
-    loadJob();
-  }, [jobId]);
+    localStorage.setItem("estimateDiscount", discount.toString());
+  }, [discount]);
 
-  const loadJob = async () => {
-    const jobData = await fetchJobById(jobId);
-    if (jobData) {
-      setJob(jobData);
-      setDiscount(jobData.estimate_data?.discount || 0);
-    }
-  };
-
-  const inspectionItems = job?.inspection_data?.items || [];
-
-  const subtotal = inspectionItems.reduce((sum, item) => {
-    return sum + (parseFloat(item.cost || 0) * parseFloat(item.multiplier || 1));
-  }, 0);
-
-  const finalTotal = subtotal - parseFloat(discount || 0);
-  const discountPercent = subtotal > 0 ? (parseFloat(discount || 0) / subtotal) * 100 : 0;
-  const approvalNeeded = discountPercent > 5;
-
-  const handleSaveEstimate = async () => {
-    setLoading(true);
-    const estimateData = {
-      items: inspectionItems.map(item => ({
-        ...item,
-        sellingPrice: parseFloat(item.cost) * parseFloat(item.multiplier)
-      })),
-      discount: parseFloat(discount || 0),
-      subtotal,
-      finalTotal,
-      gst_rate: 18,
-      approvalNeeded,
-      status: approvalNeeded ? 'pending_approval' : 'approved'
-    };
-
-    await updateEstimateData(jobId, estimateData);
-    setLoading(false);
-    alert('Estimate saved successfully!');
-  };
-
-  const generatePDF = () => {
-    const doc = new jsPDF();
-
-    doc.setFontSize(20);
-    doc.text('ESTIMATE', 105, 20, { align: 'center' });
-
-    doc.setFontSize(12);
-    doc.text(`Job No: ${job.job_no}`, 20, 40);
-    doc.text(`Vehicle: ${job.vehicle_no}`, 20, 47);
-    doc.text(`Owner: ${job.owner_name}`, 20, 54);
-    doc.text(`Date: ${new Date(job.job_date).toLocaleDateString()}`, 20, 61);
-
-    doc.setFontSize(10);
-    let yPos = 75;
-
-    doc.text('Category', 20, yPos);
-    doc.text('Item', 60, yPos);
-    doc.text('Condition', 110, yPos);
-    doc.text('Cost', 145, yPos);
-    doc.text('Multiplier', 165, yPos);
-    doc.text('Total', 185, yPos);
-
-    yPos += 7;
-    doc.line(20, yPos, 200, yPos);
-    yPos += 5;
-
-    inspectionItems.forEach(item => {
-      if (yPos > 270) {
-        doc.addPage();
-        yPos = 20;
-      }
-
-      doc.text(item.category || '', 20, yPos);
-      doc.text((item.item || '').substring(0, 20), 60, yPos);
-      doc.text(item.condition || '', 110, yPos);
-      doc.text(`₹${parseFloat(item.cost || 0).toFixed(2)}`, 145, yPos);
-      doc.text(`${item.multiplier}x`, 165, yPos);
-      doc.text(`₹${(parseFloat(item.cost || 0) * parseFloat(item.multiplier || 1)).toFixed(2)}`, 185, yPos);
-      yPos += 7;
+  // PDF Save karne ka function
+  const handleSavePDF = () => {
+    const input = document.getElementById("estimate-body");
+    html2canvas(input, { scale: 2 }).then((canvas) => {
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save("estimate.pdf");
     });
-
-    yPos += 5;
-    doc.line(20, yPos, 200, yPos);
-    yPos += 7;
-
-    doc.text(`Subtotal: ₹${subtotal.toFixed(2)}`, 145, yPos);
-    yPos += 7;
-    doc.text(`Discount: ₹${parseFloat(discount || 0).toFixed(2)}`, 145, yPos);
-    yPos += 7;
-    doc.setFont(undefined, 'bold');
-    doc.text(`Final Total: ₹${finalTotal.toFixed(2)}`, 145, yPos);
-
-    doc.save(`Estimate-${job.job_no}.pdf`);
   };
 
+  // Print karne ka function
   const handlePrint = () => {
-    window.print();
+    const printContent = document.getElementById("estimate-body");
+    const WinPrint = window.open("", "", "width=900,height=650");
+    WinPrint.document.write(`<html><head><title>Estimate</title></head><body>${printContent.innerHTML}</body></html>`);
+    WinPrint.document.close();
+    WinPrint.focus();
+    WinPrint.print();
+    WinPrint.close();
   };
-
-  if (!job) {
-    return (
-      <div className="text-center py-12 text-gray-500 dark:text-dark-text-secondary">
-        Loading estimate...
-      </div>
-    );
-  }
-
-  if (inspectionItems.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <AlertTriangle className="mx-auto h-16 w-16 text-yellow-500 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-text mb-2">
-          No Inspection Items
-        </h3>
-        <p className="text-gray-500 dark:text-dark-text-secondary">
-          Please complete the Vehicle Inspection step first.
-        </p>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      {approvalNeeded && (
-        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-amber-900 dark:text-amber-300">
-              Admin Approval Required
-            </h4>
-            <p className="text-sm text-amber-700 dark:text-amber-400">
-              Discount exceeds 5% ({discountPercent.toFixed(1)}%). Admin approval is required before proceeding.
-            </p>
-          </div>
-        </div>
-      )}
+    <div className="space-y-4">
+      <h3 className="text-xl font-bold">Estimate</h3>
 
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">
-            Estimate Details
-          </h3>
-          <div className="flex gap-2">
-            <Button onClick={generatePDF} variant="secondary" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Save PDF
-            </Button>
-            <Button onClick={handlePrint} variant="secondary" size="sm">
-              <Printer className="h-4 w-4 mr-2" />
-              Print
-            </Button>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-800">
+      {/* Estimate Table + Summary */}
+      <div id="estimate-body" className="overflow-x-auto border p-4 rounded">
+        <table className="w-full text-sm border">
+          <thead className="bg-gray-50 text-left">
+            <tr>
+              <th className="p-2 border">Category</th>
+              <th className="p-2 border">Item</th>
+              <th className="p-2 border">Condition</th>
+              <th className="p-2 border">Cost (₹)</th>
+              <th className="p-2 border">Multiplier</th>
+              <th className="p-2 border">Total (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.length === 0 && (
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase">
-                  Category
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase">
-                  Item
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase">
-                  Condition
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase">
-                  Cost (₹)
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase">
-                  Multiplier
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase">
-                  Total (₹)
-                </th>
+                <td colSpan={6} className="p-4 text-center text-gray-500">
+                  No inspection items.
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-dark-card divide-y divide-gray-200 dark:divide-gray-700">
-              {inspectionItems.map((item) => {
-                const itemTotal = parseFloat(item.cost || 0) * parseFloat(item.multiplier || 1);
-                return (
-                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-dark-text">
-                      {item.category}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-dark-text">
-                      {item.item}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-dark-text">
-                      {item.condition}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-dark-text">
-                      ₹{parseFloat(item.cost).toLocaleString('en-IN')}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900 dark:text-dark-text">
-                      {item.multiplier}x
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-dark-text">
-                      ₹{itemTotal.toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+            )}
+            {items.map((item, index) => (
+              <tr key={index} className="border-b">
+                <td className="p-2 border">{item.category}</td>
+                <td className="p-2 border">{item.item}</td>
+                <td className="p-2 border">{item.condition}</td>
+                <td className="p-2 border">{item.cost}</td>
+                <td className="p-2 border">
+                  {item.multiplier || defaultMultipliers[item.category?.trim()] || 1}
+                </td>
+                <td className="p-2 border">{calculateTotal(item).toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-        <div className="mt-6 border-t dark:border-gray-700 pt-6">
-          <div className="max-w-md ml-auto space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600 dark:text-dark-text-secondary">Subtotal:</span>
-              <span className="font-medium text-gray-900 dark:text-dark-text">
-                ₹{subtotal.toLocaleString('en-IN')}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <label className="text-sm text-gray-600 dark:text-dark-text-secondary">
-                Discount (₹):
-              </label>
-              <input
-                type="number"
-                value={discount}
-                onChange={(e) => setDiscount(e.target.value)}
-                className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-red focus:border-transparent dark:bg-gray-800 dark:text-dark-text text-right"
-                min="0"
-                step="0.01"
-              />
-            </div>
-
-            <div className="flex justify-between text-lg font-bold border-t dark:border-gray-700 pt-3">
-              <span className="text-gray-900 dark:text-dark-text">Final Total:</span>
-              <span className="text-brand-red">
-                ₹{finalTotal.toLocaleString('en-IN')}
-              </span>
-            </div>
+        {/* Summary */}
+        <div className="mt-4 text-right">
+          <div className="mb-2">Subtotal: ₹{subTotal.toFixed(2)}</div>
+          <div className="mb-2">
+            Discount:
+            <input
+              type="number"
+              value={discount}
+              onChange={(e) => setDiscount(parseFloat(e.target.value)||0)}
+              className="ml-2 w-20 p-1 border rounded"
+            />
           </div>
+          <div className="font-bold">Total: ₹{totalAfterDiscount.toFixed(2)}</div>
         </div>
+      </div>
 
-        <div className="mt-6 flex justify-end">
-          <Button onClick={handleSaveEstimate} disabled={loading}>
-            <Download className="h-4 w-4 mr-2" />
-            {loading ? 'Saving...' : 'Save Estimate'}
-          </Button>
-        </div>
-      </Card>
+      {/* Buttons */}
+      <div className="flex space-x-2 mt-4 justify-end">
+        <button onClick={handleSavePDF} className="bg-green-500 text-white px-4 py-2 rounded">
+          Save PDF
+        </button>
+        <button onClick={handlePrint} className="bg-blue-500 text-white px-4 py-2 rounded">
+          Print
+        </button>
+      </div>
     </div>
   );
 };
