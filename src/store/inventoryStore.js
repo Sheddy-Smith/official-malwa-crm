@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 const useInventoryStore = create((set, get) => ({
   stockItems: [],
   categories: [],
   stockMovements: [],
   loading: false,
+  error: null,
 
   fetchCategories: async () => {
     try {
@@ -23,6 +25,7 @@ const useInventoryStore = create((set, get) => ({
 
   addCategory: async (categoryName) => {
     try {
+      set({ loading: true, error: null });
       const { data, error } = await supabase
         .from('inventory_categories')
         .insert([{ name: categoryName }])
@@ -31,10 +34,13 @@ const useInventoryStore = create((set, get) => ({
 
       if (error) throw error;
 
-      set((state) => ({ categories: [...state.categories, data] }));
+      set((state) => ({ categories: [...state.categories, data], loading: false }));
+      toast.success('Category added successfully');
       return data;
     } catch (error) {
       console.error('Error adding category:', error);
+      set({ error: error.message, loading: false });
+      toast.error('Failed to add category');
       throw error;
     }
   },
@@ -90,6 +96,7 @@ const useInventoryStore = create((set, get) => ({
 
   addStockItem: async (itemData) => {
     try {
+      set({ loading: true, error: null });
       const newItem = {
         name: itemData.name,
         code: itemData.code || null,
@@ -110,10 +117,13 @@ const useInventoryStore = create((set, get) => ({
 
       if (error) throw error;
 
-      set((state) => ({ stockItems: [...state.stockItems, data] }));
+      set((state) => ({ stockItems: [...state.stockItems, data], loading: false }));
+      toast.success('Stock item added successfully');
       return data;
     } catch (error) {
       console.error('Error adding stock item:', error);
+      set({ error: error.message, loading: false });
+      toast.error('Failed to add stock item');
       throw error;
     }
   },
@@ -184,6 +194,7 @@ const useInventoryStore = create((set, get) => ({
 
   addStockMovement: async (movementData) => {
     try {
+      set({ loading: true, error: null });
       const { data, error } = await supabase
         .from('stock_movements')
         .insert([movementData])
@@ -192,10 +203,13 @@ const useInventoryStore = create((set, get) => ({
 
       if (error) throw error;
 
-      set((state) => ({ stockMovements: [data, ...state.stockMovements] }));
+      set((state) => ({ stockMovements: [data, ...state.stockMovements], loading: false }));
+      toast.success('Stock movement recorded successfully');
       return data;
     } catch (error) {
       console.error('Error adding stock movement:', error);
+      set({ error: error.message, loading: false });
+      toast.error('Failed to record stock movement');
       throw error;
     }
   },

@@ -10,8 +10,8 @@ import { PlusCircle, Edit, Trash2, Download, Printer, Search, AlertTriangle } fr
 const StockItemForm = ({ item, categories, onSave, onCancel }) => {
   const [formData, setFormData] = useState(
     item || {
-      item_code: '',
-      item_name: '',
+      code: '',
+      name: '',
       category_id: '',
       unit: 'pcs',
       initial_stock: 0,
@@ -28,7 +28,7 @@ const StockItemForm = ({ item, categories, onSave, onCancel }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.item_name) {
+    if (!formData.name) {
       toast.error('Item name is required.');
       return;
     }
@@ -52,8 +52,8 @@ const StockItemForm = ({ item, categories, onSave, onCancel }) => {
           </label>
           <input
             type="text"
-            name="item_code"
-            value={formData.item_code}
+            name="code"
+            value={formData.code}
             onChange={handleChange}
             placeholder="Auto-generated if empty"
             className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
@@ -66,8 +66,8 @@ const StockItemForm = ({ item, categories, onSave, onCancel }) => {
           </label>
           <input
             type="text"
-            name="item_name"
-            value={formData.item_name}
+            name="name"
+            value={formData.name}
             onChange={handleChange}
             className="w-full p-2 border border-gray-300 rounded-lg bg-white dark:bg-dark-card dark:border-gray-600 dark:text-dark-text focus:ring-2 focus:ring-brand-red"
             required
@@ -242,7 +242,7 @@ const StockAdjustmentForm = ({ item, onSave, onCancel }) => {
           Current Stock: <span className="font-bold text-gray-900 dark:text-dark-text">{item.current_stock} {item.unit}</span>
         </p>
         <p className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary mt-1">
-          Item: <span className="font-bold text-gray-900 dark:text-dark-text">{item.item_name}</span>
+          Item: <span className="font-bold text-gray-900 dark:text-dark-text">{item.name}</span>
         </p>
       </div>
 
@@ -353,7 +353,7 @@ const StockTab = () => {
           *,
           category:inventory_categories(id, name)
         `)
-        .order('item_name');
+        .order('name');
 
       if (error) throw error;
       setStockItems(data || []);
@@ -460,7 +460,7 @@ const StockTab = () => {
 
       if (error) throw error;
 
-      toast.success(`"${itemToDelete.item_name}" deleted successfully.`);
+      toast.success(`"${itemToDelete.name}" deleted successfully.`);
       setIsDeleteModalOpen(false);
       setItemToDelete(null);
       fetchStockItems();
@@ -476,8 +476,8 @@ const StockTab = () => {
       headers.join(','),
       ...filteredItems.map((item) =>
         [
-          item.item_code || '',
-          item.item_name,
+          item.code || '',
+          item.name,
           item.category?.name || '',
           item.current_stock || 0,
           item.unit,
@@ -506,8 +506,8 @@ const StockTab = () => {
 
   const filteredItems = stockItems.filter((item) => {
     const matchesSearch =
-      item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.item_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.category?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = !categoryFilter || item.category_id === categoryFilter;
     const matchesStock =
@@ -579,7 +579,7 @@ const StockTab = () => {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteItem}
         title="Delete Stock Item"
-        message={`Are you sure you want to delete "${itemToDelete?.item_name}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${itemToDelete?.name}"? This action cannot be undone.`}
       />
 
       <Card>
@@ -680,10 +680,10 @@ const StockTab = () => {
                       className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                     >
                       <td className="p-3 text-gray-700 dark:text-dark-text-secondary">
-                        {item.item_code || '-'}
+                        {item.code || '-'}
                       </td>
                       <td className="p-3 font-medium text-gray-900 dark:text-dark-text">
-                        {item.item_name}
+                        {item.name}
                         {isOutOfStock && (
                           <AlertTriangle className="inline h-4 w-4 ml-2 text-red-500" title="Out of Stock" />
                         )}

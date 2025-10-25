@@ -139,7 +139,7 @@ const StockMovements = () => {
         .from('stock_movements')
         .select(`
           *,
-          item:inventory_items(id, item_name, unit, category:inventory_categories(name))
+          item:inventory_items(id, name, unit, category:inventory_categories(name))
         `)
         .order('movement_date', { ascending: false })
         .order('created_at', { ascending: false });
@@ -165,7 +165,7 @@ const StockMovements = () => {
       if (filters.itemSearch) {
         filteredData = filteredData.filter(
           (m) =>
-            m.item?.item_name?.toLowerCase().includes(filters.itemSearch.toLowerCase()) ||
+            m.item?.name?.toLowerCase().includes(filters.itemSearch.toLowerCase()) ||
             m.item?.category?.name?.toLowerCase().includes(filters.itemSearch.toLowerCase())
         );
       }
@@ -202,7 +202,7 @@ const StockMovements = () => {
       ...movements.map((m) =>
         [
           m.movement_date,
-          m.item?.item_name || '',
+          m.item?.name || '',
           m.item?.category?.name || '',
           m.movement_type?.toUpperCase(),
           m.quantity,
@@ -249,7 +249,7 @@ const StockMovements = () => {
         yPos = 20;
       }
       doc.text(m.movement_date, 14, yPos);
-      doc.text(m.item?.item_name?.substring(0, 25) || '', 40, yPos);
+      doc.text(m.item?.name?.substring(0, 25) || '', 40, yPos);
       doc.text(m.movement_type?.toUpperCase() || '', 100, yPos);
       doc.text(`${m.quantity} ${m.item?.unit || ''}`, 120, yPos);
       doc.text(m.reference_no || '', 150, yPos);
@@ -392,7 +392,7 @@ const StockMovements = () => {
                             {new Date(movement.movement_date).toLocaleDateString('en-IN')}
                           </td>
                           <td className="p-3 font-medium text-gray-900 dark:text-dark-text">
-                            {movement.item?.item_name || '-'}
+                            {movement.item?.name || '-'}
                           </td>
                           <td className="p-3">
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
