@@ -1,1129 +1,126 @@
-
-// import { useState } from 'react';
-// import Card from "@/components/ui/Card";
-// import Button from "@/components/ui/Button";
-// import { Save, Printer, FileText } from "lucide-react";
-
-// // Simple Modal
-// const GenerateInvoiceModal = ({ isOpen, onClose }) => {
-//   const [isNewParty, setIsNewParty] = useState(false);
-
-//   if (!isOpen) return null;
-
-//   return (
-//     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-//       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-lg">
-//         <h3 className="text-lg font-bold mb-4">Generate Invoice</h3>
-
-//         <div className="mb-4">
-//           <button onClick={() => setIsNewParty(false)} className={`px-3 py-1 mr-2 rounded ${!isNewParty ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Select Existing</button>
-//           <button onClick={() => setIsNewParty(true)} className={`px-3 py-1 rounded ${isNewParty ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Add New</button>
-//         </div>
-
-//         {isNewParty ? (
-//           <div className="border p-4 rounded mb-4">
-//             <p>Add New Party Form Here</p>
-//           </div>
-//         ) : (
-//           <select className="w-full border p-2 rounded mb-4">
-//             <option>Select a customer...</option>
-//             <option>Customer 1</option>
-//             <option>Customer 2</option>
-//           </select>
-//         )}
-
-//         <select className="w-full border p-2 rounded mb-4">
-//           <option>Advance Payment</option>
-//           <option>Full Payment</option>
-//           <option>Partial Payment</option>
-//         </select>
-
-//         <div className="flex justify-end">
-//           <Button onClick={onClose}>Save & Generate</Button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// const ChalanStep = () => {
-//   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-
-//   return (
-//     <>
-//       <GenerateInvoiceModal isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} />
-
-//       <div className="space-y-4">
-//         <h3 className="text-xl font-bold">Chalan</h3>
-
-//         <Card>
-//           <p>The challan is generated after the JobSheet is finalized. The table of items here is non-editable.</p>
-
-//           <div className="flex flex-wrap gap-4 mt-4">
-//             <Button variant="secondary"><Save className="h-4 w-4 mr-2"/> Save Challan</Button>
-//             <Button onClick={() => setIsInvoiceModalOpen(true)}><FileText className="h-4 w-4 mr-2"/> Generate Invoice</Button>
-//             <Button variant="secondary"><Printer className="h-4 w-4 mr-2"/> Print Challan</Button>
-//           </div>
-//         </Card>
-//       </div>
-//     </>
-//   );
-// };
-
-// export default ChalanStep;
-
-
-// import { useState } from 'react';
-// import Card from "@/components/ui/Card";
-// import Button from "@/components/ui/Button";
-// import { Save, Printer, FileText } from "lucide-react";
-// import jsPDF from "jspdf";
-// import html2canvas from "html2canvas";
-
-// // Simple Modal
-// const GenerateInvoiceModal = ({ isOpen, onClose }) => {
-//   const [isNewParty, setIsNewParty] = useState(false);
-
-//   if (!isOpen) return null;
-
-//   return (
-//     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-//       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-lg">
-//         <h3 className="text-lg font-bold mb-4">Generate Invoice</h3>
-
-//         <div className="mb-4">
-//           <button onClick={() => setIsNewParty(false)} className={`px-3 py-1 mr-2 rounded ${!isNewParty ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Select Existing</button>
-//           <button onClick={() => setIsNewParty(true)} className={`px-3 py-1 rounded ${isNewParty ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Add New</button>
-//         </div>
-
-//         {isNewParty ? (
-//           <div className="border p-4 rounded mb-4">
-//             <p>Add New Party Form Here</p>
-//           </div>
-//         ) : (
-//           <select className="w-full border p-2 rounded mb-4">
-//             <option>Select a customer...</option>
-//             <option>Customer 1</option>
-//             <option>Customer 2</option>
-//           </select>
-//         )}
-
-//         <select className="w-full border p-2 rounded mb-4">
-//           <option>Advance Payment</option>
-//           <option>Full Payment</option>
-//           <option>Partial Payment</option>
-//         </select>
-
-//         <div className="flex justify-end">
-//           <Button onClick={onClose}>Save & Generate</Button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// const ChalanStep = () => {
-//   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-
-//   // Job Sheet ka data fetch karo
-//   const estimateItems = JSON.parse(localStorage.getItem("inspectionItems") || "[]");
-//   const extraWork = JSON.parse(localStorage.getItem("extraWork") || "[]");
-
-//   const multipliers = {
-//     Parts: 1.5,
-//     Labour: 2,
-//     Hardware: 2,
-//     Steel: 1.5,
-//   };
-
-//   const calculateTotal = (item) => {
-//     const cost = parseFloat(item.cost) || 0;
-//     const multiplier = multipliers[item.item] || 1;
-//     return cost * multiplier;
-//   };
-
-//   const subTotalEstimate = estimateItems.reduce((acc, item) => acc + calculateTotal(item), 0);
-//   const subTotalExtra = extraWork.reduce((acc, item) => acc + calculateTotal(item), 0);
-//   const grandTotal = subTotalEstimate + subTotalExtra;
-
-//   // PDF download
-//   const handleSavePDF = () => {
-//     const input = document.getElementById("challan-body");
-//     html2canvas(input, { scale: 2 }).then((canvas) => {
-//       const imgData = canvas.toDataURL("image/png");
-//       const pdf = new jsPDF("p", "mm", "a4");
-//       const pdfWidth = pdf.internal.pageSize.getWidth();
-//       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-//       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-//       pdf.save("challan.pdf");
-//     });
-//   };
-
-//   // Print
-//   const handlePrint = () => {
-//     const printContent = document.getElementById("challan-body");
-//     const WinPrint = window.open("", "", "width=900,height=650");
-//     WinPrint.document.write(`<html><head><title>Challan</title></head><body>${printContent.innerHTML}</body></html>`);
-//     WinPrint.document.close();
-//     WinPrint.focus();
-//     WinPrint.print();
-//     WinPrint.close();
-//   };
-
-//   return (
-//     <>
-//       <GenerateInvoiceModal isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} />
-
-//       <div className="space-y-4">
-//         <h3 className="text-xl font-bold">Challan</h3>
-
-//         <Card>
-//           <div id="challan-body">
-//             <h4 className="font-semibold mb-2">Tasks from Job Sheet</h4>
-//             <div className="overflow-x-auto">
-//               <table className="w-full text-sm border">
-//                 <thead className="bg-gray-100">
-//                   <tr>
-//                     <th className="p-2 border">Category</th>
-//                     <th className="p-2 border">Item</th>
-//                     <th className="p-2 border">Condition</th>
-//                     <th className="p-2 border">Cost (₹)</th>
-//                     <th className="p-2 border">Total (₹)</th>
-//                     <th className="p-2 border">Work By</th>
-//                     <th className="p-2 border">Notes</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {estimateItems.map((item, idx) => (
-//                     <tr key={`est-${idx}`} className="border-b">
-//                       <td className="p-2">{item.category}</td>
-//                       <td className="p-2">{item.item}</td>
-//                       <td className="p-2">{item.condition}</td>
-//                       <td className="p-2">{item.cost}</td>
-//                       <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-//                       <td className="p-2">Labour</td>
-//                       <td className="p-2"></td>
-//                     </tr>
-//                   ))}
-
-//                   {extraWork.map((item, idx) => (
-//                     <tr key={`extra-${idx}`} className="border-b">
-//                       <td className="p-2">{item.category}</td>
-//                       <td className="p-2">{item.item}</td>
-//                       <td className="p-2">{item.condition}</td>
-//                       <td className="p-2">{item.cost}</td>
-//                       <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-//                       <td className="p-2">{item.workBy}</td>
-//                       <td className="p-2">{item.notes}</td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-
-//               <div className="mt-4 text-right font-semibold">
-//                 <div>Subtotal (Estimate): ₹{subTotalEstimate.toFixed(2)}</div>
-//                 <div>Subtotal (Extra Work): ₹{subTotalExtra.toFixed(2)}</div>
-//                 <div className="text-lg font-bold">Grand Total: ₹{grandTotal.toFixed(2)}</div>
-//               </div>
-//             </div>
-//           </div>
-
-// <div className="flex flex-wrap gap-4 mt-4">
-//             <Button variant="secondary" onClick={handleSavePDF}><Save className="h-4 w-4 mr-2"/> Save Challan</Button>
-//             <Button onClick={() => setIsInvoiceModalOpen(true)}><FileText className="h-4 w-4 mr-2"/> Generate Invoice</Button>
-//             <Button variant="secondary" onClick={handlePrint}><Printer className="h-4 w-4 mr-2"/> Print Challan</Button>
-//           </div>
-        
-//         </Card>
-//       </div>
-//     </>
-//   );
-// };
-
-// export default ChalanStep;
-
-
-// total calculation wrong
-// import { useState } from "react";
-// import Card from "@/components/ui/Card";
-// import Button from "@/components/ui/Button";
-// import { Save, Printer, FileText } from "lucide-react";
-// import jsPDF from "jspdf";
-// import html2canvas from "html2canvas";
-
-// // Simple Modal
-// const GenerateInvoiceModal = ({ isOpen, onClose }) => {
-//   const [isNewParty, setIsNewParty] = useState(false);
-
-
-
-
-
-
-//   if (!isOpen) return null;
-
-//   return (
-//     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-//       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-lg">
-//         <h3 className="text-lg font-bold mb-4">Generate Invoice</h3>
-
-//         <div className="mb-4">
-//           <button
-//             onClick={() => setIsNewParty(false)}
-//             className={`px-3 py-1 mr-2 rounded ${
-//               !isNewParty ? "bg-blue-500 text-white" : "bg-gray-200"
-//             }`}
-//           >
-//             Select Existing
-//           </button>
-//           <button
-//             onClick={() => setIsNewParty(true)}
-//             className={`px-3 py-1 rounded ${
-//               isNewParty ? "bg-blue-500 text-white" : "bg-gray-200"
-//             }`}
-//           >
-//             Add New
-//           </button>
-//         </div>
-
-//         {isNewParty ? (
-//           <div className="border p-4 rounded mb-4">
-//             <p>Add New Party Form Here</p>
-//           </div>
-//         ) : (
-//           <select className="w-full border p-2 rounded mb-4">
-//             <option>Select a customer...</option>
-//             <option>Customer 1</option>
-//             <option>Customer 2</option>
-//           </select>
-//         )}
-
-//         <select className="w-full border p-2 rounded mb-4">
-//           <option>Advance Payment</option>
-//           <option>Full Payment</option>
-//           <option>Partial Payment</option>
-//         </select>
-
-//         <div className="flex justify-end">
-//           <Button onClick={onClose}>Save & Generate</Button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// const ChalanStep = () => {
-//   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-
-//   // Job Sheet data (Notes + WorkBy included)
-//   const jobSheetEstimate =
-//     JSON.parse(localStorage.getItem("jobSheetEstimate") || "[]");
-//   const extraWork = JSON.parse(localStorage.getItem("extraWork") || "[]");
-//   // discount hai ye
-// const discount = localStorage.getItem("estimateDiscount") || 0;
-
-//   const multipliers = {
-//     Parts: 1.5,
-//     Labour: 2,
-//     Hardware: 2,
-//     Steel: 1.5,
-//   };
-
-//   const calculateTotal = (item) => {
-//     const cost = parseFloat(item.cost) || 0;
-//     const multiplier = multipliers[item.category?.trim()] || 1;
-//     return cost * multiplier;
-//   };
-
-//   const subTotalEstimate = jobSheetEstimate.reduce(
-//     (acc, item) => acc + calculateTotal(item),
-//     0
-//   );
-//   const subTotalExtra = extraWork.reduce(
-//     (acc, item) => acc + calculateTotal(item),
-//     0
-//   );
-//   const grandTotal = subTotalEstimate + subTotalExtra;
-
-//   // PDF download
-//   const handleSavePDF = () => {
-//     const input = document.getElementById("challan-body");
-//     html2canvas(input, { scale: 2 }).then((canvas) => {
-//       const imgData = canvas.toDataURL("image/png");
-//       const pdf = new jsPDF("p", "mm", "a4");
-//       const pdfWidth = pdf.internal.pageSize.getWidth();
-//       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-//       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-//       pdf.save("challan.pdf");
-//     });
-//   };
-
-//   // Print
-//   const handlePrint = () => {
-//     const printContent = document.getElementById("challan-body");
-//     const WinPrint = window.open("", "", "width=900,height=650");
-//     WinPrint.document.write(
-//       `<html><head><title>Challan</title></head><body>${printContent.innerHTML}</body></html>`
-//     );
-//     WinPrint.document.close();
-//     WinPrint.focus();
-//     WinPrint.print();
-//     WinPrint.close();
-//   };
-
-//   return (
-//     <>
-//       <GenerateInvoiceModal
-//         isOpen={isInvoiceModalOpen}
-//         onClose={() => setIsInvoiceModalOpen(false)}
-//       />
-
-//       <div className="space-y-4">
-//         <h3 className="text-xl font-bold">Challan</h3>
-
-//         <Card>
-//           <div id="challan-body">
-//             <h4 className="font-semibold mb-2">Tasks from Job Sheet</h4>
-//             <div className="overflow-x-auto">
-//               <table className="w-full text-sm border">
-//                 <thead className="bg-gray-100">
-//                   <tr>
-//                     <th className="p-2 border">Category</th>
-//                     <th className="p-2 border">Item</th>
-//                     <th className="p-2 border">Condition</th>
-//                     <th className="p-2 border">Cost (₹)</th>
-//                     <th className="p-2 border">Total (₹)</th>
-//                     <th className="p-2 border">Work By</th>
-//                     <th className="p-2 border">Notes</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {jobSheetEstimate.map((item, idx) => (
-//                     <tr key={`est-${idx}`} className="border-b">
-//                       <td className="p-2">{item.category}</td>
-//                       <td className="p-2">{item.item}</td>
-//                       <td className="p-2">{item.condition}</td>
-//                       <td className="p-2">{item.cost}</td>
-//                       <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-//                       <td className="p-2">{item.workBy || "Labour"}</td>
-//                       <td className="p-2">{item.notes || ""}</td>
-//                     </tr>
-//                   ))}
-
-//                   {extraWork.map((item, idx) => (
-//                     <tr key={`extra-${idx}`} className="border-b">
-//                       <td className="p-2">{item.category}</td>
-//                       <td className="p-2">{item.item}</td>
-//                       <td className="p-2">{item.condition}</td>
-//                       <td className="p-2">{item.cost}</td>
-//                       <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-//                       <td className="p-2">{item.workBy}</td>
-//                       <td className="p-2">{item.notes}</td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-
-//               <div className="mt-4 text-right font-semibold">
-//                 <div>Subtotal (Estimate): ₹{subTotalEstimate.toFixed(2)}</div>
-
-//                 <div>Subtotal (Extra Work): ₹{subTotalExtra.toFixed(2)}</div>
-
-//                   <div>Estimate Discount: ₹{discount}</div>
-
-
-//                 {/* <div className="text-lg font-bold">
-//                  Grand Total: ₹{grandTotal.toFixed(2)}
-//                 </div> */}
-
-//  <div className="font-bold">Grand  Total: ₹{(grandTotal - discount).toFixed(2)}</div>
-
-
-//               </div>
-//             </div>
-//           </div>
-
-//           <div className="flex flex-wrap gap-4 mt-4">
-//             <Button variant="secondary" onClick={handleSavePDF}>
-//               <Save className="h-4 w-4 mr-2" /> Save Challan
-//             </Button>
-//             <Button onClick={() => setIsInvoiceModalOpen(true)}>
-//               <FileText className="h-4 w-4 mr-2" /> Generate Invoice
-//             </Button>
-//             <Button variant="secondary" onClick={handlePrint}>
-//               <Printer className="h-4 w-4 mr-2" /> Print Challan
-//             </Button>
-//           </div>
-//         </Card>
-//       </div>
-//     </>
-//   );
-// };
-
-// export default ChalanStep;
-
-
-
-// import { useState, useEffect } from "react";
-// import Card from "@/components/ui/Card";
-// import Button from "@/components/ui/Button";
-// import { Save, Printer, FileText } from "lucide-react";
-// import jsPDF from "jspdf";
-// import html2canvas from "html2canvas";
-
-// // Simple Modal
-// const GenerateInvoiceModal = ({ isOpen, onClose }) => {
-//   const [isNewParty, setIsNewParty] = useState(false);
-
-//   if (!isOpen) return null;
-
-//   return (
-//     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-//       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-lg">
-//         <h3 className="text-lg font-bold mb-4">Generate Invoice</h3>
-
-//         <div className="mb-4">
-//           <button
-//             onClick={() => setIsNewParty(false)}
-//             className={`px-3 py-1 mr-2 rounded ${
-//               !isNewParty ? "bg-blue-500 text-white" : "bg-gray-200"
-//             }`}
-//           >
-//             Select Existing
-//           </button>
-//           <button
-//             onClick={() => setIsNewParty(true)}
-//             className={`px-3 py-1 rounded ${
-//               isNewParty ? "bg-blue-500 text-white" : "bg-gray-200"
-//             }`}
-//           >
-//             Add New
-//           </button>
-//         </div>
-
-//         {isNewParty ? (
-//           <div className="border p-4 rounded mb-4">
-//             <p>Add New Party Form Here</p>
-//           </div>
-//         ) : (
-//           <select className="w-full border p-2 rounded mb-4">
-//             <option>Select a customer...</option>
-//             <option>Customer 1</option>
-//             <option>Customer 2</option>
-//           </select>
-//         )}
-
-//         <select className="w-full border p-2 rounded mb-4">
-//           <option>Advance Payment</option>
-//           <option>Full Payment</option>
-//           <option>Partial Payment</option>
-//         </select>
-
-//         <div className="flex justify-end">
-//           <Button onClick={onClose}>Save & Generate</Button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// const ChalanStep = () => {
-//   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-
-//   // 🔹 Data directly from Vehicle Inspection (Inspection Items)
-//   const [inspectionItems, setInspectionItems] = useState(() => {
-//     const saved = localStorage.getItem("inspectionItems");
-//     return saved ? JSON.parse(saved) : [];
-//   });
-
-//   const [extraWork, setExtraWork] = useState(() => {
-//     const saved = localStorage.getItem("extraWork");
-//     return saved ? JSON.parse(saved) : [];
-//   });
-
-//   const discount = parseFloat(localStorage.getItem("estimateDiscount")) || 0;
-
-//   // Multipliers come from inspectionItems or extraWork
-//   const calculateTotal = (item) => {
-//     const cost = parseFloat(item.cost) || 0;
-//     const multiplier = parseFloat(item.multiplier) || 1; // static from inspection/extra work
-//     return cost * multiplier;
-//   };
-
-//   const subTotalInspection = inspectionItems.reduce(
-//     (acc, item) => acc + calculateTotal(item),
-//     0
-//   );
-//   const subTotalExtra = extraWork.reduce(
-//     (acc, item) => acc + calculateTotal(item),
-//     0
-//   );
-//   const grandTotal = subTotalInspection + subTotalExtra;
-
-//   // PDF download
-//   const handleSavePDF = () => {
-//     const input = document.getElementById("challan-body");
-//     html2canvas(input, { scale: 2 }).then((canvas) => {
-//       const imgData = canvas.toDataURL("image/png");
-//       const pdf = new jsPDF("p", "mm", "a4");
-//       const pdfWidth = pdf.internal.pageSize.getWidth();
-//       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-//       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-//       pdf.save("challan.pdf");
-//     });
-//   };
-
-//   // Print
-//   const handlePrint = () => {
-//     const printContent = document.getElementById("challan-body");
-//     const WinPrint = window.open("", "", "width=900,height=650");
-//     WinPrint.document.write(
-//       `<html><head><title>Challan</title></head><body>${printContent.innerHTML}</body></html>`
-//     );
-//     WinPrint.document.close();
-//     WinPrint.focus();
-//     WinPrint.print();
-//     WinPrint.close();
-//   };
-
-//   return (
-//     <>
-//       <GenerateInvoiceModal
-//         isOpen={isInvoiceModalOpen}
-//         onClose={() => setIsInvoiceModalOpen(false)}
-//       />
-
-//       <div className="space-y-4">
-//         <h3 className="text-xl font-bold">Challan</h3>
-
-//         <Card>
-//           <div id="challan-body">
-//             <h4 className="font-semibold mb-2">Tasks from Vehicle Inspection</h4>
-//             <div className="overflow-x-auto">
-//               <table className="w-full text-sm border">
-//                 <thead className="bg-gray-100">
-//                   <tr>
-//                     <th className="p-2 border">Category</th>
-//                     <th className="p-2 border">Item</th>
-//                     <th className="p-2 border">Condition</th>
-//                     <th className="p-2 border">Cost (₹)</th>
-//                     <th className="p-2 border">Multiplier</th>
-//                     <th className="p-2 border">Total (₹)</th>
-//                     <th className="p-2 border">Work By</th>
-//                     <th className="p-2 border">Notes</th>
-//                   </tr>
-//                 </thead>
-//                 <tbody>
-//                   {inspectionItems.map((item, idx) => (
-//                     <tr key={`insp-${idx}`} className="border-b">
-//                       <td className="p-2">{item.category}</td>
-//                       <td className="p-2">{item.item}</td>
-//                       <td className="p-2">{item.condition}</td>
-//                       <td className="p-2">{item.cost}</td>
-//                       <td className="p-2">{item.multiplier}</td>
-//                       <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-//                       <td className="p-2">{item.workBy || "Labour"}</td>
-//                       <td className="p-2">{item.notes || ""}</td>
-//                     </tr>
-//                   ))}
-
-//                   {extraWork.map((item, idx) => (
-//                     <tr key={`extra-${idx}`} className="border-b">
-//                       <td className="p-2">{item.category}</td>
-//                       <td className="p-2">{item.item}</td>
-//                       <td className="p-2">{item.condition}</td>
-//                       <td className="p-2">{item.cost}</td>
-//                       <td className="p-2">{item.multiplier}</td>
-//                       <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-//                       <td className="p-2">{item.workBy || "Labour"}</td>
-//                       <td className="p-2">{item.notes || ""}</td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-
-//               <div className="mt-4 text-right font-semibold">
-//                 <div>Subtotal (Inspection): ₹{subTotalInspection.toFixed(2)}</div>
-//                 <div>Subtotal (Extra Work): ₹{subTotalExtra.toFixed(2)}</div>
-//                 <div>Estimate Discount: ₹{discount.toFixed(2)}</div>
-//                 <div className="font-bold">
-//                   Grand Total: ₹{(grandTotal - discount).toFixed(2)}
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-
-//           <div className="flex flex-wrap gap-4 mt-4">
-//             <Button variant="secondary" onClick={handleSavePDF}>
-//               <Save className="h-4 w-4 mr-2" /> Save Challan
-//             </Button>
-//             <Button onClick={() => setIsInvoiceModalOpen(true)}>
-//               <FileText className="h-4 w-4 mr-2" /> Generate Invoice
-//             </Button>
-//             <Button variant="secondary" onClick={handlePrint}>
-//               <Printer className="h-4 w-4 mr-2" /> Print Challan
-//             </Button>
-//           </div>
-//         </Card>
-//       </div>
-//     </>
-//   );
-// };
-
-// export default ChalanStep;
-
-
-
-
-
-
-// import { useState } from "react";
-// import Card from "@/components/ui/Card";
-// import Button from "@/components/ui/Button";
-// import { Save, Printer, FileText } from "lucide-react";
-// import jsPDF from "jspdf";
-// import html2canvas from "html2canvas";
-
-// const ChalanStep = () => {
-//   // Job Sheet data
-//   const jobSheetEstimate = JSON.parse(localStorage.getItem("jobSheetEstimate") || "[]");
-//   const extraWork = JSON.parse(localStorage.getItem("extraWork") || "[]");
-//   const discount = parseFloat(localStorage.getItem("estimateDiscount")) || 0;
-
-//   // Total Calculation (Multiplier static from Job Sheet/Extra Work)
-//   const calculateTotal = (item) => {
-//     const cost = parseFloat(item.cost) || 0;
-//     const multiplier = parseFloat(item.multiplier) || 1;
-//     return cost * multiplier;
-//   };
-
-//   const subTotalEstimate = jobSheetEstimate.reduce(
-//     (acc, item) => acc + calculateTotal(item),
-//     0
-//   );
-
-//   const subTotalExtra = extraWork.reduce(
-//     (acc, item) => acc + calculateTotal(item),
-//     0
-//   );
-
-//   const grandTotal = subTotalEstimate + subTotalExtra;
-//   const finalTotal = grandTotal - discount;
-
-//   // PDF download
-//   const handleSavePDF = () => {
-//     const input = document.getElementById("challan-body");
-//     html2canvas(input, { scale: 2 }).then((canvas) => {
-//       const imgData = canvas.toDataURL("image/png");
-//       const pdf = new jsPDF("p", "mm", "a4");
-//       const pdfWidth = pdf.internal.pageSize.getWidth();
-//       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-//       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-//       pdf.save("challan.pdf");
-//     });
-//   };
-
-//   // Print
-//   const handlePrint = () => {
-//     const printContent = document.getElementById("challan-body");
-//     const WinPrint = window.open("", "", "width=900,height=650");
-//     WinPrint.document.write(
-//       `<html><head><title>Challan</title></head><body>${printContent.innerHTML}</body></html>`
-//     );
-//     WinPrint.document.close();
-//     WinPrint.focus();
-//     WinPrint.print();
-//     WinPrint.close();
-//   };
-
-//   return (
-//     <div className="space-y-4">
-//       <h3 className="text-xl font-bold">Challan</h3>
-
-//       <Card>
-//         <div id="challan-body">
-//           <h4 className="font-semibold mb-2">Tasks from Job Sheet</h4>
-//           <div className="overflow-x-auto">
-//             <table className="w-full text-sm border">
-//               <thead className="bg-gray-100">
-//                 <tr>
-//                   <th className="p-2 border">Category</th>
-//                   <th className="p-2 border">Item</th>
-//                   <th className="p-2 border">Condition</th>
-//                   <th className="p-2 border">Cost (₹)</th>
-//                   <th className="p-2 border">Total (₹)</th>
-//                   <th className="p-2 border">Work By</th>
-//                   <th className="p-2 border">Notes</th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {jobSheetEstimate.map((item, idx) => (
-//                   <tr key={`est-${idx}`} className="border-b">
-//                     <td className="p-2">{item.category}</td>
-//                     <td className="p-2">{item.item}</td>
-//                     <td className="p-2">{item.condition}</td>
-//                     <td className="p-2">{item.cost}</td>
-//                     <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-//                     <td className="p-2">{item.workBy || "Labour"}</td>
-//                     <td className="p-2">{item.notes || ""}</td>
-//                   </tr>
-//                 ))}
-
-//                 {extraWork.map((item, idx) => (
-//                   <tr key={`extra-${idx}`} className="border-b">
-//                     <td className="p-2">{item.category}</td>
-//                     <td className="p-2">{item.item}</td>
-//                     <td className="p-2">{item.condition}</td>
-//                     <td className="p-2">{item.cost}</td>
-//                     <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-//                     <td className="p-2">{item.workBy || "Labour"}</td>
-//                     <td className="p-2">{item.notes || ""}</td>
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </table>
-
-//             <div className="mt-4 text-right font-semibold">
-//               <div>Subtotal (Estimate): ₹{subTotalEstimate.toFixed(2)}</div>
-//               <div>Subtotal (Extra Work): ₹{subTotalExtra.toFixed(2)}</div>
-//               <div>Estimate Discount: ₹{discount.toFixed(2)}</div>
-//               <div className="font-bold text-lg">Grand Total: ₹{finalTotal.toFixed(2)}</div>
-//             </div>
-//           </div>
-//         </div>
-
-//         <div className="flex flex-wrap gap-4 mt-4">
-//           <Button variant="secondary" onClick={handleSavePDF}>
-//             <Save className="h-4 w-4 mr-2" /> Save Challan
-//           </Button>
-//           <Button variant="secondary" onClick={handlePrint}>
-//             <Printer className="h-4 w-4 mr-2" /> Print Challan
-//           </Button>
-//         </div>
-//       </Card>
-//     </div>
-//   );
-// };
-
-// export default ChalanStep;
-
-
-
-// conmplete almost
-// import { useState, useEffect } from "react";
-// import Card from "@/components/ui/Card";
-// import Button from "@/components/ui/Button";
-// import { Save, Printer } from "lucide-react";
-// import jsPDF from "jspdf";
-// import html2canvas from "html2canvas";
-
-// const ChalanStep = () => {
-//   // Job Sheet data (Estimate + Extra Work)
-//   const [jobSheetEstimate, setJobSheetEstimate] = useState([]);
-//   const [extraWork, setExtraWork] = useState([]);
-//   const [discount, setDiscount] = useState(0);
-
-//   // Load Job Sheet and Extra Work from localStorage
-//   useEffect(() => {
-//     const estimateData = JSON.parse(localStorage.getItem("jobSheetEstimate") || "[]");
-//     const extraData = JSON.parse(localStorage.getItem("extraWork") || "[]");
-//     const disc = parseFloat(localStorage.getItem("estimateDiscount")) || 0;
-
-//     setJobSheetEstimate(estimateData);
-//     setExtraWork(extraData);
-//     setDiscount(disc);
-//   }, []);
-
-//   // Total Calculation (Multiplier static from Job Sheet)
-//   const calculateTotal = (item) => {
-//     const cost = parseFloat(item.cost) || 0;
-//     const multiplier = parseFloat(item.multiplier) || 1;
-//     return cost * multiplier;
-//   };
-
-//   const subTotalEstimate = jobSheetEstimate.reduce(
-//     (acc, item) => acc + calculateTotal(item),
-//     0
-//   );
-
-//   const subTotalExtra = extraWork.reduce(
-//     (acc, item) => acc + calculateTotal(item),
-//     0
-//   );
-
-//   const grandTotal = subTotalEstimate + subTotalExtra;
-//   const finalTotal = grandTotal - discount;
-
-//   // PDF download
-//   const handleSavePDF = () => {
-//     const input = document.getElementById("challan-body");
-//     html2canvas(input, { scale: 2 }).then((canvas) => {
-//       const imgData = canvas.toDataURL("image/png");
-//       const pdf = new jsPDF("p", "mm", "a4");
-//       const pdfWidth = pdf.internal.pageSize.getWidth();
-//       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-//       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-//       pdf.save("challan.pdf");
-//     });
-//   };
-
-//   // Print
-//   const handlePrint = () => {
-//     const printContent = document.getElementById("challan-body");
-//     const WinPrint = window.open("", "", "width=900,height=650");
-//     WinPrint.document.write(
-//       `<html><head><title>Challan</title></head><body>${printContent.innerHTML}</body></html>`
-//     );
-//     WinPrint.document.close();
-//     WinPrint.focus();
-//     WinPrint.print();
-//     WinPrint.close();
-//   };
-
-//   return (
-//     <div className="space-y-4">
-//       <h3 className="text-xl font-bold">Challan</h3>
-
-//       <Card>
-//         <div id="challan-body">
-//           <h4 className="font-semibold mb-2">Tasks from Job Sheet</h4>
-//           <div className="overflow-x-auto">
-//             <table className="w-full text-sm border">
-//               <thead className="bg-gray-100">
-//                 <tr>
-//                   <th className="p-2 border">Category</th>
-//                   <th className="p-2 border">Item</th>
-//                   <th className="p-2 border">Condition</th>
-//                   <th className="p-2 border">Cost (₹)</th>
-//                   <th className="p-2 border">Multiplier</th>
-//                   <th className="p-2 border">Total (₹)</th>
-//                   <th className="p-2 border">Work By</th>
-//                   <th className="p-2 border">Notes</th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {jobSheetEstimate.map((item, idx) => (
-//                   <tr key={`est-${idx}`} className="border-b">
-//                     <td className="p-2">{item.category}</td>
-//                     <td className="p-2">{item.item}</td>
-//                     <td className="p-2">{item.condition}</td>
-//                     <td className="p-2">{item.cost}</td>
-//                     <td className="p-2">{parseFloat(item.multiplier).toFixed(2)}</td>
-//                     <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-//                     <td className="p-2">{item.workBy || "Labour"}</td>
-//                     <td className="p-2">{item.notes || ""}</td>
-//                   </tr>
-//                 ))}
-
-//                 {extraWork.map((item, idx) => (
-//                   <tr key={`extra-${idx}`} className="border-b">
-//                     <td className="p-2">{item.category}</td>
-//                     <td className="p-2">{item.item}</td>
-//                     <td className="p-2">{item.condition}</td>
-//                     <td className="p-2">{item.cost}</td>
-//                     <td className="p-2">{parseFloat(item.multiplier).toFixed(2)}</td>
-//                     <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-//                     <td className="p-2">{item.workBy || "Labour"}</td>
-//                     <td className="p-2">{item.notes || ""}</td>
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </table>
-
-//             <div className="mt-4 text-right font-semibold">
-//               <div>Subtotal (Estimate): ₹{subTotalEstimate.toFixed(2)}</div>
-//               <div>Subtotal (Extra Work): ₹{subTotalExtra.toFixed(2)}</div>
-//               <div>Estimate Discount: ₹{discount.toFixed(2)}</div>
-//               <div className="font-bold text-lg">Grand Total: ₹{finalTotal.toFixed(2)}</div>
-//             </div>
-//           </div>
-//         </div>
-
-//         <div className="flex flex-wrap gap-4 mt-4">
-//           <Button variant="secondary" onClick={handleSavePDF}>
-//             <Save className="h-4 w-4 mr-2" /> Save Challan
-//           </Button>
-//           <Button variant="secondary" onClick={handlePrint}>
-//             <Printer className="h-4 w-4 mr-2" /> Print Challan
-//           </Button>
-//         </div>
-//       </Card>
-//     </div>
-//   );
-// };
-
-// export default ChalanStep;
-
-
-
-import { useState, useEffect } from "react";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import { Save, Printer, Trash2 } from "lucide-react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-
-const ChalanStep = () => {
-  const [jobSheetEstimate, setJobSheetEstimate] = useState([]);
-  const [extraWork, setExtraWork] = useState([]);
-  const [discount, setDiscount] = useState(0);
+import { useState, useEffect } from 'react';
+import { Download, Printer } from 'lucide-react';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import useJobsStore from '@/store/jobsStore';
+import jsPDF from 'jspdf';
+
+const ChalanStep = ({ jobId }) => {
+  const [job, setJob] = useState(null);
+  const fetchJobById = useJobsStore(state => state.fetchJobById);
+  const updateChalanData = useJobsStore(state => state.updateChalanData);
 
   useEffect(() => {
-    const estimateData = JSON.parse(localStorage.getItem("jobSheetEstimate") || "[]");
-    const extraData = JSON.parse(localStorage.getItem("extraWork") || "[]");
-    const disc = parseFloat(localStorage.getItem("estimateDiscount")) || 0;
+    loadJob();
+  }, [jobId]);
 
-    setJobSheetEstimate(estimateData);
-    setExtraWork(extraData);
-    setDiscount(disc);
-  }, []);
-
-  const calculateTotal = (item) => {
-    const cost = parseFloat(item.cost) || 0;
-    const multiplier = parseFloat(item.multiplier) || 1;
-    return cost * multiplier;
+  const loadJob = async () => {
+    const jobData = await fetchJobById(jobId);
+    if (jobData) setJob(jobData);
   };
 
-  const subTotalEstimate = jobSheetEstimate.reduce(
-    (acc, item) => acc + calculateTotal(item),
-    0
-  );
-
-  const subTotalExtra = extraWork.reduce(
-    (acc, item) => acc + calculateTotal(item),
-    0
-  );
-
-  const grandTotal = subTotalEstimate + subTotalExtra;
-  const finalTotal = grandTotal - discount;
-
-  // ✅ Delete entry from localStorage + UI
-  const handleDelete = (type, index) => {
-    if (type === "estimate") {
-      const updated = jobSheetEstimate.filter((_, i) => i !== index);
-      setJobSheetEstimate(updated);
-      localStorage.setItem("jobSheetEstimate", JSON.stringify(updated));
-    } else if (type === "extra") {
-      const updated = extraWork.filter((_, i) => i !== index);
-      setExtraWork(updated);
-      localStorage.setItem("extraWork", JSON.stringify(updated));
-    }
+  const handleSaveChallan = async () => {
+    const chalanData = {
+      items: job.jobsheet_data?.items || [],
+      extraWork: job.jobsheet_data?.extraWork || [],
+      generatedAt: new Date().toISOString()
+    };
+    await updateChalanData(jobId, chalanData);
+    alert('Challan saved successfully!');
   };
 
-  // ✅ Save as PDF
-  const handleSavePDF = () => {
-    const input = document.getElementById("challan-body");
-    html2canvas(input, { scale: 2 }).then((canvas) => {
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save("challan.pdf");
-    });
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(20);
+    doc.text('DELIVERY CHALLAN', 105, 20, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text(`Job No: ${job.job_no}`, 20, 40);
+    doc.text(`Vehicle: ${job.vehicle_no}`, 20, 47);
+    doc.text(`Owner: ${job.owner_name}`, 20, 54);
+    doc.text(`Date: ${new Date(job.job_date).toLocaleDateString('en-IN')}`, 20, 61);
+    doc.save(`Challan-${job.job_no}.pdf`);
   };
 
-  // ✅ Print
-  const handlePrint = () => {
-    const printContent = document.getElementById("challan-body");
-    const WinPrint = window.open("", "", "width=900,height=650");
-    WinPrint.document.write(
-      `<html><head><title>Challan</title></head><body>${printContent.innerHTML}</body></html>`
-    );
-    WinPrint.document.close();
-    WinPrint.focus();
-    WinPrint.print();
-    WinPrint.close();
-  };
+  if (!job) return <div className="text-center py-12 text-gray-500 dark:text-dark-text-secondary">Loading challan...</div>;
+
+  const savedJobSheetEstimate = localStorage.getItem('jobSheetEstimate');
+  const savedExtraWork = localStorage.getItem('extraWork');
+  const savedDiscount = localStorage.getItem('estimateDiscount');
+
+  const items = savedJobSheetEstimate ? JSON.parse(savedJobSheetEstimate) : [];
+  const extraWork = savedExtraWork ? JSON.parse(savedExtraWork) : [];
+  const inspectionSubtotal = items.reduce((sum, item) => sum + (parseFloat(item.cost || 0) * parseFloat(item.multiplier || 1)), 0);
+  const extraWorkSubtotal = extraWork.reduce((sum, work) => sum + (parseFloat(work.cost || 0) * parseFloat(work.multiplier || 1)), 0);
+  const estimateDiscount = savedDiscount ? parseFloat(savedDiscount) : 0;
+  const grandTotal = inspectionSubtotal + extraWorkSubtotal - estimateDiscount;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-xl font-bold">Challan</h3>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-text">Delivery Challan</h2>
+          <p className="text-sm text-gray-500 dark:text-dark-text-secondary mt-1">Status: <span className="text-orange-600 dark:text-orange-400 font-medium">Ready for Delivery</span></p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={handleSaveChallan} size="sm"><Download className="h-4 w-4 mr-2" />Save Challan</Button>
+          <Button onClick={generatePDF} variant="secondary" size="sm"><Download className="h-4 w-4 mr-2" />PDF</Button>
+          <Button onClick={() => window.print()} variant="secondary" size="sm"><Printer className="h-4 w-4 mr-2" />Print</Button>
+        </div>
+      </div>
 
-      <Card>
-        <div id="challan-body">
-          <h4 className="font-semibold mb-2">Tasks from Job Sheet</h4>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="p-2 border">Category</th>
-                  <th className="p-2 border">Item</th>
-                  <th className="p-2 border">Condition</th>
-                  <th className="p-2 border">Cost (₹)</th>
-                  <th className="p-2 border">Multiplier</th>
-                  <th className="p-2 border">Total (₹)</th>
-                  <th className="p-2 border">Work By</th>
-                  <th className="p-2 border">Notes</th>
-                  <th className="p-2 border text-center">Action</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {/* Estimate Data */}
-                {jobSheetEstimate.map((item, idx) => (
-                  <tr key={`est-${idx}`} className="border-b">
-                    <td className="p-2">{item.category}</td>
-                    <td className="p-2">{item.item}</td>
-                    <td className="p-2">{item.condition}</td>
-                    <td className="p-2">{item.cost}</td>
-                    <td className="p-2">{parseFloat(item.multiplier).toFixed(2)}</td>
-                    <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-                    <td className="p-2">{item.workBy || "Labour"}</td>
-                    <td className="p-2">{item.notes || ""}</td>
-                    <td className="p-2 text-center">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete("estimate", idx)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-
-                {/* Extra Work Data */}
-                {extraWork.map((item, idx) => (
-                  <tr key={`extra-${idx}`} className="border-b">
-                    <td className="p-2">{item.category}</td>
-                    <td className="p-2">{item.item}</td>
-                    <td className="p-2">{item.condition}</td>
-                    <td className="p-2">{item.cost}</td>
-                    <td className="p-2">{parseFloat(item.multiplier).toFixed(2)}</td>
-                    <td className="p-2">{calculateTotal(item).toFixed(2)}</td>
-                    <td className="p-2">{item.workBy || "Labour"}</td>
-                    <td className="p-2">{item.notes || ""}</td>
-                    <td className="p-2 text-center">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete("extra", idx)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <div className="mt-4 text-right font-semibold">
-              <div>Subtotal (Estimate): ₹{subTotalEstimate.toFixed(2)}</div>
-              <div>Subtotal (Extra Work): ₹{subTotalExtra.toFixed(2)}</div>
-              <div>Estimate Discount: ₹{discount.toFixed(2)}</div>
-              <div className="font-bold text-lg">Grand Total: ₹{finalTotal.toFixed(2)}</div>
-            </div>
+      <Card className="p-6">
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div><span className="text-gray-500 dark:text-dark-text-secondary">Job No:</span><p className="font-medium text-gray-900 dark:text-dark-text">{job.job_no}</p></div>
+            <div><span className="text-gray-500 dark:text-dark-text-secondary">Vehicle:</span><p className="font-medium text-gray-900 dark:text-dark-text">{job.vehicle_no}</p></div>
+            <div><span className="text-gray-500 dark:text-dark-text-secondary">Owner:</span><p className="font-medium text-gray-900 dark:text-dark-text">{job.owner_name}</p></div>
+            <div><span className="text-gray-500 dark:text-dark-text-secondary">Date:</span><p className="font-medium text-gray-900 dark:text-dark-text">{new Date(job.job_date).toLocaleDateString('en-IN')}</p></div>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4 mt-4">
-          <Button variant="secondary" onClick={handleSavePDF}>
-            <Save className="h-4 w-4 mr-2" /> Save Challan
-          </Button>
-          <Button variant="secondary" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-2" /> Print Challan
-          </Button>
+        <h4 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Estimate Items</h4>
+        <div className="overflow-x-auto mb-6">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                {['Category', 'Item', 'Cost (₹)', 'Total (₹)', 'Work By', 'Notes'].map(h => (<th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase">{h}</th>))}
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-dark-card divide-y divide-gray-200 dark:divide-gray-700">
+              {items.map((item) => {
+                const itemTotal = parseFloat(item.cost || 0) * parseFloat(item.multiplier || 1);
+                return (<tr key={item.id}><td className="px-4 py-3 text-sm">{item.category}</td><td className="px-4 py-3 text-sm">{item.item}</td><td className="px-4 py-3 text-sm">₹{parseFloat(item.cost).toLocaleString('en-IN')}</td><td className="px-4 py-3 text-sm font-medium">₹{itemTotal.toLocaleString('en-IN')}</td><td className="px-4 py-3 text-sm">{item.workBy || '-'}</td><td className="px-4 py-3 text-sm text-gray-500">{item.notes || '-'}</td></tr>);
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {extraWork.length > 0 && (
+          <>
+            <h4 className="font-semibold text-gray-900 dark:text-dark-text mb-3">Extra Work</h4>
+            <div className="overflow-x-auto mb-6">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>{['Category', 'Item', 'Cost (₹)', 'Total (₹)', 'Work By', 'Notes'].map(h => (<th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-dark-text-secondary uppercase">{h}</th>))}</tr>
+                </thead>
+                <tbody className="bg-white dark:bg-dark-card divide-y divide-gray-200 dark:divide-gray-700">
+                  {extraWork.map((work) => {
+                    const workTotal = parseFloat(work.cost || 0) * parseFloat(work.multiplier || 1);
+                    return (<tr key={work.id}><td className="px-4 py-3 text-sm">{work.category}</td><td className="px-4 py-3 text-sm">{work.item}</td><td className="px-4 py-3 text-sm">₹{parseFloat(work.cost).toLocaleString('en-IN')}</td><td className="px-4 py-3 text-sm font-medium">₹{workTotal.toLocaleString('en-IN')}</td><td className="px-4 py-3 text-sm">{work.workBy || '-'}</td><td className="px-4 py-3 text-sm text-gray-500">{work.notes || '-'}</td></tr>);
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        <div className="border-t dark:border-gray-700 pt-6">
+          <div className="max-w-md ml-auto space-y-3">
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-dark-text-secondary">Subtotal (Estimate):</span><span className="font-medium">₹{inspectionSubtotal.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-gray-600 dark:text-dark-text-secondary">Subtotal (Extra):</span><span className="font-medium">₹{extraWorkSubtotal.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between text-sm text-red-600"><span>Discount:</span><span>- ₹{estimateDiscount.toLocaleString('en-IN')}</span></div>
+            <div className="flex justify-between text-lg font-bold border-t pt-3"><span>Grand Total:</span><span className="text-brand-red">₹{grandTotal.toLocaleString('en-IN')}</span></div>
+          </div>
         </div>
       </Card>
     </div>

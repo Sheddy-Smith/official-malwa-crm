@@ -2,17 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
 
 const useCustomerStore = create(
   persist(
     (set, get) => ({
       customers: [],
       loading: false,
-      error: null,
 
       fetchCustomers: async () => {
-        set({ loading: true, error: null });
+        set({ loading: true });
         try {
           const { data, error } = await supabase
             .from('customers')
@@ -21,19 +19,14 @@ const useCustomerStore = create(
 
           if (error) throw error;
           set({ customers: data || [] });
-          return data;
         } catch (error) {
           console.error('Error fetching customers:', error);
-          set({ error: error.message });
-          toast.error('Failed to load customers');
-          throw error;
         } finally {
           set({ loading: false });
         }
       },
 
       addCustomer: async (customer) => {
-        set({ loading: true, error: null });
         try {
           const { data, error } = await supabase
             .from('customers')
@@ -65,21 +58,16 @@ const useCustomerStore = create(
 
           set((state) => ({
             customers: [data, ...state.customers],
-            loading: false,
           }));
 
-          toast.success('Customer added successfully');
           return data;
         } catch (error) {
           console.error('Error adding customer:', error);
-          set({ error: error.message, loading: false });
-          toast.error('Failed to add customer: ' + error.message);
           throw error;
         }
       },
 
       updateCustomer: async (updatedCustomer) => {
-        set({ loading: true, error: null });
         try {
           const { data, error } = await supabase
             .from('customers')
@@ -100,21 +88,16 @@ const useCustomerStore = create(
             customers: state.customers.map((c) =>
               c.id === updatedCustomer.id ? data : c
             ),
-            loading: false,
           }));
 
-          toast.success('Customer updated successfully');
           return data;
         } catch (error) {
           console.error('Error updating customer:', error);
-          set({ error: error.message, loading: false });
-          toast.error('Failed to update customer');
           throw error;
         }
       },
 
       deleteCustomer: async (customerId) => {
-        set({ loading: true, error: null });
         try {
           const { error } = await supabase
             .from('customers')
@@ -125,20 +108,14 @@ const useCustomerStore = create(
 
           set((state) => ({
             customers: state.customers.filter((c) => c.id !== customerId),
-            loading: false,
           }));
-
-          toast.success('Customer deleted successfully');
         } catch (error) {
           console.error('Error deleting customer:', error);
-          set({ error: error.message, loading: false });
-          toast.error('Failed to delete customer');
           throw error;
         }
       },
 
       addLedgerEntry: async (customerId, entry) => {
-        set({ loading: true, error: null });
         try {
           const { data, error } = await supabase
             .from('customer_ledger_entries')
@@ -160,13 +137,9 @@ const useCustomerStore = create(
 
           await get().fetchCustomers();
 
-          set({ loading: false });
-          toast.success('Ledger entry added successfully');
           return data;
         } catch (error) {
           console.error('Error adding ledger entry:', error);
-          set({ error: error.message, loading: false });
-          toast.error('Failed to add ledger entry');
           throw error;
         }
       },

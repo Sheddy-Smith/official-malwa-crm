@@ -1,15 +1,13 @@
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
 
 const useSupplierStore = create((set, get) => ({
   suppliers: [],
   loading: false,
-  error: null,
 
   fetchSuppliers: async () => {
     try {
-      set({ loading: true, error: null });
+      set({ loading: true });
       const { data, error } = await supabase
         .from('suppliers')
         .select('*')
@@ -17,18 +15,14 @@ const useSupplierStore = create((set, get) => ({
 
       if (error) throw error;
       set({ suppliers: data || [], loading: false });
-      return data;
     } catch (error) {
       console.error('Error fetching suppliers:', error);
-      set({ error: error.message, loading: false });
-      toast.error('Failed to load suppliers');
-      throw error;
+      set({ loading: false });
     }
   },
 
   addSupplier: async (supplierData) => {
     try {
-      set({ loading: true, error: null });
       const newSupplier = {
         name: supplierData.name,
         company: supplierData.company || null,
@@ -59,20 +53,16 @@ const useSupplierStore = create((set, get) => ({
         }]);
       }
 
-      set((state) => ({ suppliers: [...state.suppliers, data], loading: false }));
-      toast.success('Supplier added successfully');
+      set((state) => ({ suppliers: [...state.suppliers, data] }));
       return data;
     } catch (error) {
       console.error('Error adding supplier:', error);
-      set({ error: error.message, loading: false });
-      toast.error('Failed to add supplier');
       throw error;
     }
   },
 
   updateSupplier: async (updatedSupplier) => {
     try {
-      set({ loading: true, error: null });
       const { error } = await supabase
         .from('suppliers')
         .update({
@@ -90,33 +80,24 @@ const useSupplierStore = create((set, get) => ({
 
       set((state) => ({
         suppliers: state.suppliers.map((s) => (s.id === updatedSupplier.id ? { ...s, ...updatedSupplier } : s)),
-        loading: false,
       }));
-      toast.success('Supplier updated successfully');
     } catch (error) {
       console.error('Error updating supplier:', error);
-      set({ error: error.message, loading: false });
-      toast.error('Failed to update supplier');
       throw error;
     }
   },
 
   deleteSupplier: async (supplierId) => {
     try {
-      set({ loading: true, error: null });
       const { error} = await supabase.from('suppliers').delete().eq('id', supplierId);
 
       if (error) throw error;
 
       set((state) => ({
         suppliers: state.suppliers.filter((s) => s.id !== supplierId),
-        loading: false,
       }));
-      toast.success('Supplier deleted successfully');
     } catch (error) {
       console.error('Error deleting supplier:', error);
-      set({ error: error.message, loading: false });
-      toast.error('Failed to delete supplier');
       throw error;
     }
   },
