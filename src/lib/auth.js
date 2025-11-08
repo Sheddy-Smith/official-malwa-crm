@@ -168,18 +168,31 @@ export const authService = {
 
 export const seedDefaultUser = async () => {
   try {
+    console.log('🔍 Checking for existing users...');
     const userCount = await dbOperations.count('users');
-    if (userCount > 0) return;
+    console.log('📊 User count:', userCount);
 
-    await authService.signUp({
+    if (userCount > 0) {
+      console.log('ℹ️ Users already exist, skipping seed');
+      return;
+    }
+
+    console.log('👤 Creating Super Admin...');
+    const result = await authService.signUp({
       email: 'Shahidmultaniii',
       password: 'S#d_8224',
       name: 'Super Admin',
       role: 'Super Admin'
     });
 
-    console.log('Super Admin created: Shahidmultaniii / S#d_8224');
+    if (result.error) {
+      console.error('❌ Failed to create Super Admin:', result.error);
+    } else {
+      console.log('✅ Super Admin created successfully!');
+      console.log('📧 User ID: Shahidmultaniii');
+      console.log('🔑 Password: S#d_8224');
+    }
   } catch (error) {
-    console.error('Error seeding super admin:', error);
+    console.error('❌ Error seeding super admin:', error);
   }
 };

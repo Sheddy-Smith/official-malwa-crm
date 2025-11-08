@@ -43,7 +43,8 @@ export const clearAllData = async () => {
   console.log('All data cleared. Refresh the page to reinitialize.');
 };
 
-if (typeof window !== 'undefined') {
-  window.debugDB = debugDatabase;
-  window.clearDB = clearAllData;
-}
+// Attach to window immediately
+window.debugDB = debugDatabase;
+window.clearDB = clearAllData;
+
+console.log('Debug utilities loaded: window.debugDB() and window.clearDB()');

@@ -7,6 +7,7 @@ import { ThemeProvider } from './hooks/ThemeProvider.jsx'
 import { initDB } from './lib/db'
 import { seedDefaultUser } from './lib/auth'
 import './utils/dbDebug'
+import './utils/resetAdmin'
 
 initDB().then(() => {
   console.log('IndexedDB initialized successfully');

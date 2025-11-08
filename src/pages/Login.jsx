@@ -38,16 +38,24 @@ const Login = () => {
   };
 
   const handleResetDatabase = async () => {
-    if (!window.confirm('This will delete ALL data and reset the database. Are you sure?')) {
+    if (!window.confirm('This will delete ALL data and recreate the Super Admin account. Are you sure?')) {
       return;
     }
 
     try {
-      await window.clearDB();
-      toast.success('Database cleared! Refreshing page...');
-      setTimeout(() => window.location.reload(), 1500);
+      if (window.resetSuperAdmin) {
+        const success = await window.resetSuperAdmin();
+        if (success) {
+          toast.success('Super Admin recreated! Refreshing page...');
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          toast.error('Failed to reset. Check console for details.');
+        }
+      } else {
+        toast.error('Reset function not available. Please refresh the page.');
+      }
     } catch (error) {
-      toast.error('Error clearing database. Try clearing browser data manually.');
+      toast.error('Error resetting database. Check console for details.');
       console.error(error);
     }
   };
