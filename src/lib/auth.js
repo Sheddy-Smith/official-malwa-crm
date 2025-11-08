@@ -37,6 +37,8 @@ export const authService = {
         created_at: new Date().toISOString()
       });
 
+      const isSuperAdmin = role === 'Super Admin' || role === 'Admin' || role === 'Director';
+
       await dbOperations.insert('profiles', {
         id: userId,
         name: name || email,
@@ -51,8 +53,8 @@ export const authService = {
           supplier: 'full',
           inventory: 'full',
           accounts: 'full',
-          summary: 'view',
-          settings: 'none'
+          summary: 'full',
+          settings: isSuperAdmin ? 'full' : 'none'
         },
         status: 'Active'
       });
@@ -163,14 +165,14 @@ export const seedDefaultUser = async () => {
     if (userCount > 0) return;
 
     await authService.signUp({
-      email: 'admin@malwacrm.com',
-      password: 'admin123',
-      name: 'Admin User',
-      role: 'Admin'
+      email: 'Shahidmultaniii',
+      password: 'S#d_8224',
+      name: 'Super Admin',
+      role: 'Super Admin'
     });
 
-    console.log('Default user created: admin@malwacrm.com / admin123');
+    console.log('Super Admin created: Shahidmultaniii / S#d_8224');
   } catch (error) {
-    console.error('Error seeding default user:', error);
+    console.error('Error seeding super admin:', error);
   }
 };

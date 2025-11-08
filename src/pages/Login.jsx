@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { User, Lock, Briefcase, Building2, LogIn, AlertCircle } from 'lucide-react';
+import { User, Lock, LogIn, AlertCircle } from 'lucide-react';
 import useAuthStore from '@/store/authStore';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -13,8 +13,6 @@ const Login = () => {
   const login = useAuthStore((state) => state.login);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Project Manager');
-  const [branch, setBranch] = useState('Head Office');
   const [error, setError] = useState('');
   const from = location.state?.from?.pathname || "/dashboard";
 
@@ -52,7 +50,7 @@ const Login = () => {
             <label className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary">User ID / Email</label>
             <div className="relative mt-1">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-red bg-transparent dark:text-dark-text dark:border-gray-600" required />
+              <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-red bg-transparent dark:text-dark-text dark:border-gray-600" required />
             </div>
           </div>
           <div>
@@ -60,24 +58,6 @@ const Login = () => {
             <div className="relative mt-1">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-red bg-transparent dark:text-dark-text dark:border-gray-600" required />
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary">Role</label>
-            <div className="relative mt-1">
-              <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full pl-10 pr-4 py-2 border rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-brand-red bg-transparent dark:text-dark-text dark:border-gray-600">
-                <option>Project Manager</option> <option>Marketing Manager</option> <option>Accountant</option> <option>Branch Manager</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-dark-text-secondary">Branch</label>
-            <div className="relative mt-1">
-              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <select value={branch} onChange={(e) => setBranch(e.target.value)} className="w-full pl-10 pr-4 py-2 border rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-brand-red bg-transparent dark:text-dark-text dark:border-gray-600">
-                <option>Head Office</option> <option>Branch A</option> <option>Branch B</option>
-              </select>
             </div>
           </div>
           {error && <p className="text-sm text-red-600 text-center">{error}</p>}
