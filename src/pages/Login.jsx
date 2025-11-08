@@ -37,6 +37,21 @@ const Login = () => {
     });
   };
 
+  const handleResetDatabase = async () => {
+    if (!window.confirm('This will delete ALL data and reset the database. Are you sure?')) {
+      return;
+    }
+
+    try {
+      await window.clearDB();
+      toast.success('Database cleared! Refreshing page...');
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (error) {
+      toast.error('Error clearing database. Try clearing browser data manually.');
+      console.error(error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-dark-background flex items-center justify-center p-4">
        <div className="absolute top-4 right-4"><ThemeToggle /></div>
@@ -66,8 +81,13 @@ const Login = () => {
                 <LogIn className="h-5 w-5 mr-2" /> Login
             </Button>
           </div>
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <Button type="button" variant="ghost" onClick={handleForgotPin}>Forgot PIN?</Button>
+            <div className="pt-4 border-t dark:border-gray-700">
+              <Button type="button" variant="ghost" onClick={handleResetDatabase} className="text-xs text-gray-500 hover:text-red-600">
+                Reset Database (Clear All Data)
+              </Button>
+            </div>
           </div>
         </form>
       </Card>

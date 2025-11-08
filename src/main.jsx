@@ -6,12 +6,15 @@ import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from './hooks/ThemeProvider.jsx'
 import { initDB } from './lib/db'
 import { seedDefaultUser } from './lib/auth'
+import './utils/dbDebug'
 
 initDB().then(() => {
   console.log('IndexedDB initialized successfully');
   return seedDefaultUser();
 }).then(() => {
-  console.log('Default user seeded');
+  console.log('Super Admin initialization complete');
+  console.log('To debug database, use: window.debugDB()');
+  console.log('To clear all data, use: window.clearDB()');
 }).catch(error => {
   console.error('Error initializing database:', error);
 });

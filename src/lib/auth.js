@@ -67,8 +67,12 @@ export const authService = {
 
   async signIn({ email, password }) {
     try {
+      console.log('Login attempt for:', email);
       const users = await dbOperations.getByIndex('users', 'email', email);
+      console.log('Users found:', users.length);
+
       if (users.length === 0) {
+        console.error('User not found');
         throw new Error('Invalid email or password');
       }
 
@@ -76,10 +80,12 @@ export const authService = {
       const hashedPassword = await hashPassword(password);
 
       if (user.password !== hashedPassword) {
+        console.error('Password mismatch');
         throw new Error('Invalid email or password');
       }
 
       const profile = await dbOperations.getById('profiles', user.id);
+      console.log('Login successful for:', profile?.name);
 
       const session = {
         user: {
@@ -94,6 +100,7 @@ export const authService = {
 
       return { user: session.user, profile, error: null };
     } catch (error) {
+      console.error('Login failed:', error.message);
       return { user: null, profile: null, error };
     }
   },
