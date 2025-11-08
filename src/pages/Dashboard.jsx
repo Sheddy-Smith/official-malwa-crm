@@ -4,7 +4,6 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, 
 import Card from '@/components/ui/Card';
 import PageHeader from '@/components/PageHeader';
 import useJobsStore from '@/store/jobsStore';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 const COLORS = ['#1E3A8A', '#D32F2F', '#FFC107', '#4CAF50'];

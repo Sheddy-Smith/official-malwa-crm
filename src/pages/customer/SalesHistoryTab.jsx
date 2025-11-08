@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import { supabase } from '@/lib/supabase';
 import { Search, Download, Filter } from 'lucide-react';
 
 const SalesHistoryTab = () => {

@@ -6,7 +6,7 @@ import BranchesTab from "./settings/BranchesTab";
 import AdminPasswordModal from "@/components/AdminPasswordModal";
 import useAuthStore from "@/store/authStore";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { dbOperations } from "@/lib/db";
 
 const allTabs = [
   { id: "users", label: "User Management", component: UserManagementTab, directorOnly: true },
@@ -36,14 +36,9 @@ const Settings = () => {
       let role = user.role || "Accountant";
 
       if (user.id) {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        if (!error && data) {
-          role = data.role;
+        const profile = await dbOperations.getById("profiles", user.id);
+        if (profile) {
+          role = profile.role;
         }
       }
 

@@ -1,7 +1,9 @@
 import { create } from 'zustand';
-import { supabase } from '@/lib/supabase';
-import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'sonner';
+import { dbOperations } from '@/lib/db';
+
+const generateJobNo = () => `JOB-${Date.now()}`;
+const generateInvoiceNo = () => `INV-${Date.now()}`;
 
 const useJobsStore = create((set, get) => ({
   jobs: [],
@@ -12,22 +14,24 @@ const useJobsStore = create((set, get) => ({
   fetchJobs: async () => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
-        .from('customer_jobs')
-        .select(`
-          *,
-          customers (
-            id,
-            name,
-            company,
-            phone,
-            gstin
-          )
-        `)
-        .order('created_at', { ascending: false });
+      const jobs = await dbOperations.getAll('customer_jobs');
+      const customers = await dbOperations.getAll('customers');
 
-      if (error) throw error;
-      set({ jobs: data || [], loading: false });
+      const jobsWithCustomers = jobs.map(job => {
+        const customer = customers.find(c => c.id === job.customer_id);
+        return {
+          ...job,
+          customers: customer ? {
+            id: customer.id,
+            name: customer.name,
+            company: customer.company,
+            phone: customer.phone,
+            gstin: customer.gstin
+          } : null
+        };
+      });
+
+      set({ jobs: jobsWithCustomers || [], loading: false });
     } catch (error) {
       set({ error: error.message, loading: false });
       console.error('Error fetching jobs:', error);
@@ -37,24 +41,26 @@ const useJobsStore = create((set, get) => ({
   fetchJobById: async (jobId) => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
-        .from('customer_jobs')
-        .select(`
-          *,
-          customers (
-            id,
-            name,
-            company,
-            phone,
-            gstin
-          )
-        `)
-        .eq('id', jobId)
-        .maybeSingle();
+      const job = await dbOperations.getById('customer_jobs', jobId);
+      if (!job) {
+        set({ loading: false });
+        return null;
+      }
 
-      if (error) throw error;
+      const customer = await dbOperations.getById('customers', job.customer_id);
+      const jobWithCustomer = {
+        ...job,
+        customers: customer ? {
+          id: customer.id,
+          name: customer.name,
+          company: customer.company,
+          phone: customer.phone,
+          gstin: customer.gstin
+        } : null
+      };
+
       set({ loading: false });
-      return data;
+      return jobWithCustomer;
     } catch (error) {
       set({ error: error.message, loading: false });
       console.error('Error fetching job:', error);
@@ -66,30 +72,22 @@ const useJobsStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const newJob = {
-        id: uuidv4(),
-        job_no: `JOB-${Date.now()}`,
+        job_no: generateJobNo(),
         customer_id: jobData.customerId,
         vehicle_no: jobData.vehicleNo,
         owner_name: jobData.ownerName,
         branch: jobData.branch || 'Head Office',
         status: 'inspection',
         job_date: jobData.inspectionDate || new Date().toISOString().split('T')[0],
-        inspection_data: { items: [], details: {} },
-        estimate_data: { items: [], discount: 0, gst_rate: 18 },
-        jobsheet_data: { items: [], extraWork: [], finalized: false },
+        inspection_data: JSON.stringify({ items: [], details: {} }),
+        estimate_data: JSON.stringify({ items: [], discount: 0, gst_rate: 18 }),
+        jobsheet_data: JSON.stringify({ items: [], extraWork: [], finalized: false }),
         chalan_data: null,
         invoice_data: null,
-        total_amount: 0,
-        created_at: new Date().toISOString()
+        total_amount: 0
       };
 
-      const { data, error } = await supabase
-        .from('customer_jobs')
-        .insert([newJob])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await dbOperations.insert('customer_jobs', newJob);
 
       set(state => ({
         jobs: [data, ...state.jobs],
@@ -110,17 +108,10 @@ const useJobsStore = create((set, get) => ({
   updateJobDetails: async (jobId, updates) => {
     set({ loading: true, error: null });
     try {
-      const { data, error } = await supabase
-        .from('customer_jobs')
-        .update(updates)
-        .eq('id', jobId)
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await dbOperations.update('customer_jobs', jobId, updates);
 
       set(state => ({
-        jobs: state.jobs.map(job => job.id === jobId ? data : job),
+        jobs: state.jobs.map(job => job.id === jobId ? { ...job, ...data } : job),
         loading: false
       }));
 
@@ -136,21 +127,21 @@ const useJobsStore = create((set, get) => ({
 
   updateInspectionData: async (jobId, inspectionData) => {
     return get().updateJobDetails(jobId, {
-      inspection_data: inspectionData,
+      inspection_data: JSON.stringify(inspectionData),
       status: 'inspection'
     });
   },
 
   updateEstimateData: async (jobId, estimateData) => {
     return get().updateJobDetails(jobId, {
-      estimate_data: estimateData,
+      estimate_data: JSON.stringify(estimateData),
       status: 'estimate'
     });
   },
 
   updateJobSheetData: async (jobId, jobsheetData) => {
     return get().updateJobDetails(jobId, {
-      jobsheet_data: jobsheetData,
+      jobsheet_data: JSON.stringify(jobsheetData),
       status: 'jobsheet'
     });
   },
@@ -169,45 +160,46 @@ const useJobsStore = create((set, get) => ({
       for (const item of allItems) {
         if (item.workBy === 'Labour' && item.labourId) {
           const amount = parseFloat(item.cost) * parseFloat(item.multiplier || 1);
-          await supabase.from('labour_ledger_entries').insert({
+          await dbOperations.insert('labour_ledger_entries', {
             labour_id: item.labourId,
-            date: new Date().toISOString().split('T')[0],
-            type: 'debit',
-            description: `Job ${job.job_no} - ${item.item}`,
-            amount: amount,
-            reference_type: 'job',
-            reference_id: jobId
+            entry_date: new Date().toISOString().split('T')[0],
+            particulars: `Job ${job.job_no} - ${item.item}`,
+            ref_type: 'job',
+            ref_id: jobId,
+            debit: amount,
+            credit: 0
           });
         }
 
         if (item.workBy === 'Vendor' && item.vendorId) {
           const amount = parseFloat(item.cost) * parseFloat(item.multiplier || 1);
-          await supabase.from('vendor_ledger_entries').insert({
+          await dbOperations.insert('vendor_ledger_entries', {
             vendor_id: item.vendorId,
-            date: new Date().toISOString().split('T')[0],
-            type: 'debit',
-            description: `Job ${job.job_no} - ${item.item}`,
-            amount: amount,
-            reference_type: 'job',
-            reference_id: jobId
+            entry_date: new Date().toISOString().split('T')[0],
+            particulars: `Job ${job.job_no} - ${item.item}`,
+            ref_type: 'job',
+            ref_id: jobId,
+            debit: amount,
+            credit: 0
           });
         }
 
         if (item.inventoryItemId) {
-          await supabase.from('stock_movements').insert({
+          await dbOperations.insert('stock_movements', {
             item_id: item.inventoryItemId,
             movement_type: 'out',
             quantity: parseFloat(item.quantity || 1),
             reference_type: 'job',
             reference_id: jobId,
-            notes: `Used in Job ${job.job_no}`
+            notes: `Used in Job ${job.job_no}`,
+            movement_date: new Date().toISOString().split('T')[0]
           });
         }
       }
 
       const updatedJobsheet = { ...jobsheetData, finalized: true };
       await get().updateJobDetails(jobId, {
-        jobsheet_data: updatedJobsheet,
+        jobsheet_data: JSON.stringify(updatedJobsheet),
         status: 'jobsheet'
       });
 
@@ -224,7 +216,7 @@ const useJobsStore = create((set, get) => ({
 
   updateChalanData: async (jobId, chalanData) => {
     return get().updateJobDetails(jobId, {
-      chalan_data: chalanData,
+      chalan_data: JSON.stringify(chalanData),
       status: 'chalan'
     });
   },
@@ -235,13 +227,12 @@ const useJobsStore = create((set, get) => ({
       const job = await get().fetchJobById(jobId);
       if (!job) throw new Error('Job not found');
 
-      const invoiceId = uuidv4();
-      const invoiceNo = `INV-${Date.now()}`;
+      const invoiceNo = generateInvoiceNo();
 
       const invoice = {
-        id: invoiceId,
         invoice_no: invoiceNo,
         customer_id: job.customer_id,
+        job_id: jobId,
         invoice_date: invoiceData.invoiceDate || new Date().toISOString().split('T')[0],
         due_date: invoiceData.dueDate,
         subtotal: invoiceData.subtotal,
@@ -250,42 +241,41 @@ const useJobsStore = create((set, get) => ({
         discount_amount: invoiceData.discountAmount || 0,
         total_amount: invoiceData.totalAmount,
         payment_status: 'pending',
-        items: invoiceData.items,
+        items: JSON.stringify(invoiceData.items),
         notes: invoiceData.notes
       };
 
-      const { error: invoiceError } = await supabase
-        .from('invoices')
-        .insert([invoice]);
+      const invoiceRecord = await dbOperations.insert('invoices', invoice);
 
-      if (invoiceError) throw invoiceError;
-
-      await supabase.from('customer_ledger_entries').insert({
+      await dbOperations.insert('customer_ledger_entries', {
         customer_id: job.customer_id,
-        date: invoice.invoice_date,
-        type: 'debit',
-        description: `Invoice ${invoiceNo} - Job ${job.job_no}`,
-        amount: invoice.total_amount,
-        reference_type: 'invoice',
-        reference_id: invoiceId
+        entry_date: invoice.invoice_date,
+        particulars: `Invoice ${invoiceNo} - Job ${job.job_no}`,
+        ref_type: 'invoice',
+        ref_no: invoiceNo,
+        ref_id: invoiceRecord.id,
+        debit: invoice.total_amount,
+        credit: 0
       });
 
       if (invoiceData.gstAmount > 0) {
-        await supabase.from('gst_ledger').insert({
-          date: invoice.invoice_date,
-          type: 'output',
-          invoice_no: invoiceNo,
-          customer_supplier: job.customers?.name || job.owner_name,
-          gstin: job.customers?.gstin,
+        await dbOperations.insert('gst_ledger', {
+          transaction_date: invoice.invoice_date,
+          transaction_type: 'output',
+          document_no: invoiceNo,
+          party_name: job.customers?.name || job.owner_name,
           taxable_amount: invoice.subtotal,
-          gst_rate: invoice.gst_rate,
-          gst_amount: invoice.gst_amount,
-          total_amount: invoice.total_amount
+          cgst: invoice.gst_amount / 2,
+          sgst: invoice.gst_amount / 2,
+          igst: 0,
+          total_gst: invoice.gst_amount,
+          input_credit: 0,
+          output_tax: invoice.gst_amount
         });
       }
 
       await get().updateJobDetails(jobId, {
-        invoice_data: { invoiceId, invoiceNo, ...invoiceData },
+        invoice_data: JSON.stringify({ invoiceId: invoiceRecord.id, invoiceNo, ...invoiceData }),
         status: 'completed',
         total_amount: invoice.total_amount
       });
@@ -304,12 +294,7 @@ const useJobsStore = create((set, get) => ({
   deleteJob: async (jobId) => {
     set({ loading: true, error: null });
     try {
-      const { error } = await supabase
-        .from('customer_jobs')
-        .delete()
-        .eq('id', jobId);
-
-      if (error) throw error;
+      await dbOperations.delete('customer_jobs', jobId);
 
       set(state => ({
         jobs: state.jobs.filter(job => job.id !== jobId),

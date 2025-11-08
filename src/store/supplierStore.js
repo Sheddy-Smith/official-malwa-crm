@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { dbOperations, recalculateSupplierBalance } from '@/lib/db';
 
 const useSupplierStore = create((set, get) => ({
   suppliers: [],
@@ -10,12 +10,7 @@ const useSupplierStore = create((set, get) => ({
   fetchSuppliers: async () => {
     try {
       set({ loading: true, error: null });
-      const { data, error } = await supabase
-        .from('suppliers')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (error) throw error;
+      const data = await dbOperations.getAll('suppliers');
       set({ suppliers: data || [], loading: false });
       return data;
     } catch (error) {
@@ -40,23 +35,17 @@ const useSupplierStore = create((set, get) => ({
         credit_limit: supplierData.credit_limit || 0,
       };
 
-      const { data, error } = await supabase
-        .from('suppliers')
-        .insert([newSupplier])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await dbOperations.insert('suppliers', newSupplier);
 
       if (data && parseFloat(data.opening_balance) !== 0) {
-        await supabase.from('supplier_ledger_entries').insert([{
+        await dbOperations.insert('supplier_ledger_entries', {
           supplier_id: data.id,
           entry_date: new Date().toISOString().split('T')[0],
           particulars: 'Opening Balance',
           ref_type: 'opening',
           debit: parseFloat(data.opening_balance),
           credit: 0,
-        }]);
+        });
       }
 
       set((state) => ({ suppliers: [...state.suppliers, data], loading: false }));
@@ -73,20 +62,14 @@ const useSupplierStore = create((set, get) => ({
   updateSupplier: async (updatedSupplier) => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase
-        .from('suppliers')
-        .update({
-          name: updatedSupplier.name,
-          company: updatedSupplier.company,
-          phone: updatedSupplier.phone,
-          address: updatedSupplier.address,
-          gstin: updatedSupplier.gstin,
-          credit_limit: updatedSupplier.credit_limit,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', updatedSupplier.id);
-
-      if (error) throw error;
+      await dbOperations.update('suppliers', updatedSupplier.id, {
+        name: updatedSupplier.name,
+        company: updatedSupplier.company,
+        phone: updatedSupplier.phone,
+        address: updatedSupplier.address,
+        gstin: updatedSupplier.gstin,
+        credit_limit: updatedSupplier.credit_limit,
+      });
 
       set((state) => ({
         suppliers: state.suppliers.map((s) => (s.id === updatedSupplier.id ? { ...s, ...updatedSupplier } : s)),
@@ -104,9 +87,7 @@ const useSupplierStore = create((set, get) => ({
   deleteSupplier: async (supplierId) => {
     try {
       set({ loading: true, error: null });
-      const { error} = await supabase.from('suppliers').delete().eq('id', supplierId);
-
-      if (error) throw error;
+      await dbOperations.delete('suppliers', supplierId);
 
       set((state) => ({
         suppliers: state.suppliers.filter((s) => s.id !== supplierId),

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { dbOperations, updateInventoryStock } from '@/lib/db';
 
 const useInventoryStore = create((set, get) => ({
   stockItems: [],
@@ -11,12 +11,7 @@ const useInventoryStore = create((set, get) => ({
 
   fetchCategories: async () => {
     try {
-      const { data, error } = await supabase
-        .from('inventory_categories')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (error) throw error;
+      const data = await dbOperations.getAll('inventory_categories');
       set({ categories: data || [] });
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -26,13 +21,7 @@ const useInventoryStore = create((set, get) => ({
   addCategory: async (categoryName) => {
     try {
       set({ loading: true, error: null });
-      const { data, error } = await supabase
-        .from('inventory_categories')
-        .insert([{ name: categoryName }])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await dbOperations.insert('inventory_categories', { name: categoryName });
 
       set((state) => ({ categories: [...state.categories, data], loading: false }));
       toast.success('Category added successfully');
@@ -47,12 +36,7 @@ const useInventoryStore = create((set, get) => ({
 
   updateCategory: async (categoryId, newName) => {
     try {
-      const { error } = await supabase
-        .from('inventory_categories')
-        .update({ name: newName })
-        .eq('id', categoryId);
-
-      if (error) throw error;
+      await dbOperations.update('inventory_categories', categoryId, { name: newName });
 
       set((state) => ({
         categories: state.categories.map((c) => (c.id === categoryId ? { ...c, name: newName } : c)),
@@ -65,9 +49,7 @@ const useInventoryStore = create((set, get) => ({
 
   deleteCategory: async (categoryId) => {
     try {
-      const { error } = await supabase.from('inventory_categories').delete().eq('id', categoryId);
-
-      if (error) throw error;
+      await dbOperations.delete('inventory_categories', categoryId);
 
       set((state) => ({
         categories: state.categories.filter((c) => c.id !== categoryId),
@@ -81,13 +63,18 @@ const useInventoryStore = create((set, get) => ({
   fetchStockItems: async () => {
     try {
       set({ loading: true });
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .select('*, category:inventory_categories(name)')
-        .order('name', { ascending: true });
+      const items = await dbOperations.getAll('inventory_items');
+      const categories = await dbOperations.getAll('inventory_categories');
 
-      if (error) throw error;
-      set({ stockItems: data || [], loading: false });
+      const itemsWithCategory = items.map(item => {
+        const category = categories.find(c => c.id === item.category_id);
+        return {
+          ...item,
+          category: category ? { name: category.name } : null
+        };
+      });
+
+      set({ stockItems: itemsWithCategory || [], loading: false });
     } catch (error) {
       console.error('Error fetching stock items:', error);
       set({ loading: false });
@@ -109,13 +96,7 @@ const useInventoryStore = create((set, get) => ({
         location: itemData.location || null,
       };
 
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .insert([newItem])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await dbOperations.insert('inventory_items', newItem);
 
       set((state) => ({ stockItems: [...state.stockItems, data], loading: false }));
       toast.success('Stock item added successfully');
@@ -130,22 +111,16 @@ const useInventoryStore = create((set, get) => ({
 
   updateStockItem: async (updatedItem) => {
     try {
-      const { error } = await supabase
-        .from('inventory_items')
-        .update({
-          name: updatedItem.name,
-          code: updatedItem.code,
-          category_id: updatedItem.category_id,
-          unit: updatedItem.unit,
-          reorder_level: updatedItem.reorder_level,
-          cost_price: updatedItem.cost_price,
-          selling_price: updatedItem.selling_price,
-          location: updatedItem.location,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', updatedItem.id);
-
-      if (error) throw error;
+      await dbOperations.update('inventory_items', updatedItem.id, {
+        name: updatedItem.name,
+        code: updatedItem.code,
+        category_id: updatedItem.category_id,
+        unit: updatedItem.unit,
+        reorder_level: updatedItem.reorder_level,
+        cost_price: updatedItem.cost_price,
+        selling_price: updatedItem.selling_price,
+        location: updatedItem.location,
+      });
 
       set((state) => ({
         stockItems: state.stockItems.map((item) => (item.id === updatedItem.id ? { ...item, ...updatedItem } : item)),
@@ -158,9 +133,7 @@ const useInventoryStore = create((set, get) => ({
 
   deleteStockItem: async (itemId) => {
     try {
-      const { error } = await supabase.from('inventory_items').delete().eq('id', itemId);
-
-      if (error) throw error;
+      await dbOperations.delete('inventory_items', itemId);
 
       set((state) => ({
         stockItems: state.stockItems.filter((item) => item.id !== itemId),
@@ -173,20 +146,32 @@ const useInventoryStore = create((set, get) => ({
 
   fetchStockMovements: async (filters = {}) => {
     try {
-      let query = supabase
-        .from('stock_movements')
-        .select('*, item:inventory_items(name, code, unit)')
-        .order('movement_date', { ascending: false })
-        .order('created_at', { ascending: false });
+      const allMovements = await dbOperations.getAll('stock_movements');
+      const items = await dbOperations.getAll('inventory_items');
 
-      if (filters.item_id) query = query.eq('item_id', filters.item_id);
-      if (filters.start_date) query = query.gte('movement_date', filters.start_date);
-      if (filters.end_date) query = query.lte('movement_date', filters.end_date);
+      let filteredMovements = allMovements;
 
-      const { data, error } = await query;
+      if (filters.item_id) {
+        filteredMovements = filteredMovements.filter(m => m.item_id === filters.item_id);
+      }
+      if (filters.start_date) {
+        filteredMovements = filteredMovements.filter(m => m.movement_date >= filters.start_date);
+      }
+      if (filters.end_date) {
+        filteredMovements = filteredMovements.filter(m => m.movement_date <= filters.end_date);
+      }
 
-      if (error) throw error;
-      set({ stockMovements: data || [] });
+      const movementsWithItem = filteredMovements.map(movement => {
+        const item = items.find(i => i.id === movement.item_id);
+        return {
+          ...movement,
+          item: item ? { name: item.name, code: item.code, unit: item.unit } : null
+        };
+      });
+
+      movementsWithItem.sort((a, b) => new Date(b.movement_date) - new Date(a.movement_date));
+
+      set({ stockMovements: movementsWithItem || [] });
     } catch (error) {
       console.error('Error fetching stock movements:', error);
     }
@@ -195,13 +180,9 @@ const useInventoryStore = create((set, get) => ({
   addStockMovement: async (movementData) => {
     try {
       set({ loading: true, error: null });
-      const { data, error } = await supabase
-        .from('stock_movements')
-        .insert([movementData])
-        .select()
-        .single();
+      const data = await dbOperations.insert('stock_movements', movementData);
 
-      if (error) throw error;
+      await updateInventoryStock(movementData.item_id, movementData.movement_type, movementData.quantity);
 
       set((state) => ({ stockMovements: [data, ...state.stockMovements], loading: false }));
       toast.success('Stock movement recorded successfully');
@@ -216,4 +197,3 @@ const useInventoryStore = create((set, get) => ({
 }));
 
 export default useInventoryStore;
-

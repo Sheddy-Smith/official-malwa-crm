@@ -3,7 +3,6 @@ import { toast } from 'sonner';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
-import { supabase } from '@/lib/supabase';
 import {
   Download,
   Printer,

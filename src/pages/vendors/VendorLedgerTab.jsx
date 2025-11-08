@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
 import useVendorStore from '@/store/vendorStore';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';

@@ -4,7 +4,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { Building2, Plus, Edit, Trash2, Printer, Download } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { dbOperations } from "@/lib/db";
 import { toast } from "sonner";
 
 const BranchesTab = () => {

@@ -4,7 +4,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { User, Mail, Lock, Building2, Shield } from "lucide-react";
 import useAuthStore from "@/store/authStore";
-import { supabase } from "@/lib/supabase";
+import { dbOperations } from "@/lib/db";
 import { toast } from "sonner";
 
 const MyProfileTab = () => {

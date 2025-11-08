@@ -4,7 +4,7 @@ import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { toast } from "sonner";
 import { Edit, Trash2, PlusCircle, KeyRound, Download, Printer, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { dbOperations } from "@/lib/db";
 
 const MODULE_PERMISSIONS = {
   dashboard: "Dashboard",

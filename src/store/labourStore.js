@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { dbOperations, recalculateLabourBalance } from '@/lib/db';
 
 const useLabourStore = create((set, get) => ({
   labour: [],
@@ -10,12 +10,7 @@ const useLabourStore = create((set, get) => ({
   fetchLabour: async () => {
     try {
       set({ loading: true, error: null });
-      const { data, error } = await supabase
-        .from('labour')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (error) throw error;
+      const data = await dbOperations.getAll('labour');
       set({ labour: data || [], loading: false });
       return data;
     } catch (error) {
@@ -39,23 +34,17 @@ const useLabourStore = create((set, get) => ({
         daily_rate: labourData.daily_rate || 0,
       };
 
-      const { data, error } = await supabase
-        .from('labour')
-        .insert([newLabour])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await dbOperations.insert('labour', newLabour);
 
       if (data && parseFloat(data.opening_balance) !== 0) {
-        await supabase.from('labour_ledger_entries').insert([{
+        await dbOperations.insert('labour_ledger_entries', {
           labour_id: data.id,
           entry_date: new Date().toISOString().split('T')[0],
           particulars: 'Opening Balance',
           ref_type: 'opening',
           debit: parseFloat(data.opening_balance),
           credit: 0,
-        }]);
+        });
       }
 
       set((state) => ({ labour: [...state.labour, data], loading: false }));
@@ -72,19 +61,13 @@ const useLabourStore = create((set, get) => ({
   updateLabour: async (updatedLabour) => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase
-        .from('labour')
-        .update({
-          name: updatedLabour.name,
-          phone: updatedLabour.phone,
-          address: updatedLabour.address,
-          skill_type: updatedLabour.skill_type,
-          daily_rate: updatedLabour.daily_rate,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', updatedLabour.id);
-
-      if (error) throw error;
+      await dbOperations.update('labour', updatedLabour.id, {
+        name: updatedLabour.name,
+        phone: updatedLabour.phone,
+        address: updatedLabour.address,
+        skill_type: updatedLabour.skill_type,
+        daily_rate: updatedLabour.daily_rate,
+      });
 
       set((state) => ({
         labour: state.labour.map((l) => (l.id === updatedLabour.id ? { ...l, ...updatedLabour } : l)),
@@ -102,9 +85,7 @@ const useLabourStore = create((set, get) => ({
   deleteLabour: async (labourId) => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase.from('labour').delete().eq('id', labourId);
-
-      if (error) throw error;
+      await dbOperations.delete('labour', labourId);
 
       set((state) => ({
         labour: state.labour.filter((l) => l.id !== labourId),

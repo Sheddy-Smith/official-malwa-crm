@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { dbOperations, recalculateVendorBalance } from '@/lib/db';
 
 const useVendorStore = create((set, get) => ({
   vendors: [],
@@ -10,12 +10,7 @@ const useVendorStore = create((set, get) => ({
   fetchVendors: async () => {
     try {
       set({ loading: true, error: null });
-      const { data, error } = await supabase
-        .from('vendors')
-        .select('*')
-        .order('name', { ascending: true });
-
-      if (error) throw error;
+      const data = await dbOperations.getAll('vendors');
       set({ vendors: data || [], loading: false });
       return data;
     } catch (error) {
@@ -41,23 +36,17 @@ const useVendorStore = create((set, get) => ({
         credit_limit: vendorData.credit_limit || 0,
       };
 
-      const { data, error } = await supabase
-        .from('vendors')
-        .insert([newVendor])
-        .select()
-        .single();
-
-      if (error) throw error;
+      const data = await dbOperations.insert('vendors', newVendor);
 
       if (data && parseFloat(data.opening_balance) !== 0) {
-        await supabase.from('vendor_ledger_entries').insert([{
+        await dbOperations.insert('vendor_ledger_entries', {
           vendor_id: data.id,
           entry_date: new Date().toISOString().split('T')[0],
           particulars: 'Opening Balance',
           ref_type: 'opening',
           debit: parseFloat(data.opening_balance),
           credit: 0,
-        }]);
+        });
       }
 
       set((state) => ({ vendors: [...state.vendors, data], loading: false }));
@@ -74,21 +63,15 @@ const useVendorStore = create((set, get) => ({
   updateVendor: async (updatedVendor) => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase
-        .from('vendors')
-        .update({
-          name: updatedVendor.name,
-          company: updatedVendor.company,
-          phone: updatedVendor.phone,
-          address: updatedVendor.address,
-          gstin: updatedVendor.gstin,
-          vendor_type: updatedVendor.vendor_type,
-          credit_limit: updatedVendor.credit_limit,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', updatedVendor.id);
-
-      if (error) throw error;
+      await dbOperations.update('vendors', updatedVendor.id, {
+        name: updatedVendor.name,
+        company: updatedVendor.company,
+        phone: updatedVendor.phone,
+        address: updatedVendor.address,
+        gstin: updatedVendor.gstin,
+        vendor_type: updatedVendor.vendor_type,
+        credit_limit: updatedVendor.credit_limit,
+      });
 
       set((state) => ({
         vendors: state.vendors.map((v) => (v.id === updatedVendor.id ? { ...v, ...updatedVendor } : v)),
@@ -106,9 +89,7 @@ const useVendorStore = create((set, get) => ({
   deleteVendor: async (vendorId) => {
     try {
       set({ loading: true, error: null });
-      const { error } = await supabase.from('vendors').delete().eq('id', vendorId);
-
-      if (error) throw error;
+      await dbOperations.delete('vendors', vendorId);
 
       set((state) => ({
         vendors: state.vendors.filter((v) => v.id !== vendorId),

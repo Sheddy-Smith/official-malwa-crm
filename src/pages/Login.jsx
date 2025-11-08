@@ -18,22 +18,16 @@ const Login = () => {
   const [error, setError] = useState('');
   const from = location.state?.from?.pathname || "/dashboard";
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    const directorEmails = ['malwatrolley@gmail.com', 'SheddySmith822@gmail.com'];
-    const user = {
-      name: 'Demo User',
-      email,
-      role: directorEmails.includes(email) ? 'Director' : role,
-      branch
-    };
-    const loggedIn = login(user, { email, password });
+
+    const loggedIn = await login(email, password);
     if (loggedIn) {
       toast.success('Login Successful!');
       navigate(from, { replace: true });
     } else {
-      setError('Invalid User ID or PIN. Please try again.');
+      setError('Invalid email or password. Please try again.');
       toast.error('Login Failed!');
     }
   };
