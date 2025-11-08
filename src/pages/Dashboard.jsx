@@ -5,6 +5,8 @@ import Card from '@/components/ui/Card';
 import PageHeader from '@/components/PageHeader';
 import useJobsStore from '@/store/jobsStore';
 import { toast } from 'sonner';
+import { motion } from 'framer-motion';
+import { dbOperations } from '@/lib/db';
 
 const COLORS = ['#1E3A8A', '#D32F2F', '#FFC107', '#4CAF50'];
 
@@ -27,24 +29,18 @@ const Dashboard = () => {
       setLoading(true);
 
       const [
-        jobsResult,
-        invoicesResult,
-        vendorLedgerResult,
-        labourLedgerResult,
-        customersResult,
+        jobs,
+        invoices,
+        vendorLedger,
+        labourLedger,
+        customers,
       ] = await Promise.all([
-        supabase.from('customer_jobs').select('*'),
-        supabase.from('invoices').select('total_amount, created_at, payment_status'),
-        supabase.from('vendor_ledger_entries').select('debit, entry_date'),
-        supabase.from('labour_ledger_entries').select('debit, entry_date'),
-        supabase.from('customers').select('id'),
+        dbOperations.getAll('customer_jobs'),
+        dbOperations.getAll('invoices'),
+        dbOperations.getAll('vendor_ledger_entries'),
+        dbOperations.getAll('labour_ledger_entries'),
+        dbOperations.getAll('customers'),
       ]);
-
-      const jobs = jobsResult.data || [];
-      const invoices = invoicesResult.data || [];
-      const vendorLedger = vendorLedgerResult.data || [];
-      const labourLedger = labourLedgerResult.data || [];
-      const customers = customersResult.data || [];
 
       const today = new Date();
       const currentMonth = today.getMonth();
@@ -199,7 +195,12 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
+    >
       <PageHeader title="Dashboard" />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -412,7 +413,7 @@ const Dashboard = () => {
           </div>
         )}
       </Card>
-    </div>
+    </motion.div>
   );
 };
 
