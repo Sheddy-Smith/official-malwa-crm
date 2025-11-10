@@ -1,501 +1,425 @@
-import { useState, useEffect } from "react";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
-import ConfirmModal from "@/components/ui/ConfirmModal";
-import { PlusCircle, Trash2, Edit, Save, X } from "lucide-react";
-import JobSearchBar from "@/components/jobs/JobSearchBar";
-import JobReportList from "@/components/jobs/JobReportList";
-import useAuthStore from "@/store/authStore";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import { PlusCircle, Trash2, Edit, Save, X, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
+import useJobsStore from '@/store/jobsStore';
+import useCustomerStore from '@/store/customerStore';
 
 const InspectionStep = () => {
-  const { user } = useAuthStore();
-  const [details, setDetails] = useState({
-    vehicleNo: "",
-    ownerName: "",
-    inspectionDate: new Date().toISOString().split('T')[0],
-    branch: "",
-    status: "in-progress",
+  const navigate = useNavigate();
+  const { jobs, fetchJobs, createNewJob, updateInspectionData, setCurrentJobId } = useJobsStore();
+  const { customers, fetchCustomers } = useCustomerStore();
+
+  const [showNewJobModal, setShowNewJobModal] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [inspectionItems, setInspectionItems] = useState([]);
+  const [editingIndex, setEditingIndex] = useState(null);
+
+  const [newJobForm, setNewJobForm] = useState({
+    customerId: '',
+    vehicleNo: '',
+    ownerName: '',
+    branch: 'Head Office',
+    inspectionDate: new Date().toISOString().split('T')[0]
   });
 
-  const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [newItem, setNewItem] = useState(null);
-  const [records, setRecords] = useState([]);
-  const [filteredRecords, setFilteredRecords] = useState([]);
-  const [currentRecordId, setCurrentRecordId] = useState(null);
-  const [showStatusModal, setShowStatusModal] = useState(false);
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
-
-  const multipliers = {
-    Hardware: 2,
-    Steel: 1.5,
-    Labour: 2,
-    Parts: 1.5,
-  };
+  const [newItem, setNewItem] = useState({
+    category: '',
+    item: '',
+    description: '',
+    remarks: ''
+  });
 
   useEffect(() => {
-    const loadCats = () => {
+    fetchJobs();
+    fetchCustomers();
+  }, []);
+
+  useEffect(() => {
+    if (selectedJobId) {
+      loadInspectionData(selectedJobId);
+    }
+  }, [selectedJobId]);
+
+  const loadInspectionData = async (jobId) => {
+    const job = jobs.find(j => j.id === jobId);
+    if (job && job.inspection_data) {
       try {
-        const saved = localStorage.getItem("categories");
-        setCategories(saved ? JSON.parse(saved) : []);
-      } catch {
-        setCategories([]);
+        const data = typeof job.inspection_data === 'string'
+          ? JSON.parse(job.inspection_data)
+          : job.inspection_data;
+        setInspectionItems(data.items || []);
+      } catch (e) {
+        setInspectionItems([]);
       }
-    };
-    loadCats();
+    }
+  };
 
-    const onCats = () => loadCats();
-    const onStorage = (e) => { if (e.key === "categories") loadCats(); };
-
-    window.addEventListener("categoriesUpdated", onCats);
-    window.addEventListener("storage", onStorage);
-
-    return () => {
-      window.removeEventListener("categoriesUpdated", onCats);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, []);
-
-  useEffect(() => {
-    loadRecords();
-  }, []);
-
-  const loadRecords = async () => {
-    const { data, error } = await supabase
-      .from('jobs_inspection')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      toast.error('Failed to load inspection records');
+  const handleCreateJob = async () => {
+    if (!newJobForm.customerId || !newJobForm.vehicleNo) {
+      toast.error('Please fill all required fields');
       return;
     }
 
-    setRecords(data || []);
-    setFilteredRecords(data || []);
-  };
-
-  const handleSearch = (filters) => {
-    let filtered = [...records];
-
-    if (filters.vehicleNo) {
-      filtered = filtered.filter(r =>
-        r.vehicle_no.toLowerCase().includes(filters.vehicleNo.toLowerCase())
-      );
-    }
-
-    if (filters.partyName) {
-      filtered = filtered.filter(r =>
-        r.party_name.toLowerCase().includes(filters.partyName.toLowerCase())
-      );
-    }
-
-    if (filters.dateFrom) {
-      filtered = filtered.filter(r => r.date >= filters.dateFrom);
-    }
-
-    if (filters.dateTo) {
-      filtered = filtered.filter(r => r.date <= filters.dateTo);
-    }
-
-    setFilteredRecords(filtered);
-  };
-
-  const handleReset = () => {
-    setFilteredRecords(records);
-  };
-
-  const handleDetailChange = (e) => setDetails({ ...details, [e.target.name]: e.target.value });
-
-  const saveDetails = async () => {
-    if (!details.vehicleNo || !details.ownerName) {
-      toast.error('Vehicle No and Owner Name are required');
-      return;
-    }
-
-    const payload = {
-      vehicle_no: details.vehicleNo,
-      party_name: details.ownerName,
-      date: details.inspectionDate,
-      branch: details.branch,
-      status: details.status,
-      items: items,
-      user_id: user?.id
+    const customer = customers.find(c => c.id === newJobForm.customerId);
+    const jobData = {
+      ...newJobForm,
+      ownerName: customer?.name || newJobForm.ownerName
     };
 
-    if (currentRecordId) {
-      const { error } = await supabase
-        .from('jobs_inspection')
-        .update(payload)
-        .eq('id', currentRecordId);
-
-      if (error) {
-        toast.error('Failed to update inspection');
-        return;
-      }
-
-      toast.success('Inspection updated successfully');
-    } else {
-      const { data, error } = await supabase
-        .from('jobs_inspection')
-        .insert([payload])
-        .select()
-        .single();
-
-      if (error) {
-        toast.error('Failed to save inspection');
-        return;
-      }
-
-      setCurrentRecordId(data.id);
-      toast.success('Inspection saved successfully');
-    }
-
-    loadRecords();
-  };
-
-  const addRow = () => setNewItem({ item: "", category: "", condition: "OK", cost: "0", multiplier: 1 });
-
-  const saveNewRow = () => {
-    if (!newItem || !newItem.item?.trim()) {
-      toast.error("Enter item name");
-      return;
-    }
-    setItems([...items, newItem]);
-    setNewItem(null);
-  };
-
-  const editRow = (index) => setEditingIndex(index);
-
-  const saveEditRow = (index) => {
-    const it = items[index];
-    if (!it || !it.item?.trim()) {
-      toast.error("Item cannot be empty");
-      return;
-    }
-    setEditingIndex(null);
-  };
-
-  const deleteRow = (index) => setItems(items.filter((_, i) => i !== index));
-
-  const calculateTotal = (item) => {
-    const cost = parseFloat(item?.cost) || 0;
-    const multiplier = parseFloat(item?.multiplier) || multipliers[item?.category?.trim()] || 1;
-    return (cost * multiplier).toFixed(2);
-  };
-
-  const handleEditRecord = (record) => {
-    setCurrentRecordId(record.id);
-    setDetails({
-      vehicleNo: record.vehicle_no,
-      ownerName: record.party_name,
-      inspectionDate: record.date,
-      branch: record.branch,
-      status: record.status,
-    });
-    setItems(record.items || []);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    toast.info('Record loaded for editing');
-  };
-
-  const handleDeleteRecord = async (id) => {
-    const { error } = await supabase
-      .from('jobs_inspection')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      toast.error('Failed to delete inspection');
-      return;
-    }
-
-    toast.success('Inspection deleted successfully');
-    loadRecords();
-    setDeleteConfirmId(null);
-
-    if (currentRecordId === id) {
-      setCurrentRecordId(null);
-      setDetails({
-        vehicleNo: "",
-        ownerName: "",
-        inspectionDate: new Date().toISOString().split('T')[0],
-        branch: "",
-        status: "in-progress",
+    const newJob = await createNewJob(jobData);
+    if (newJob) {
+      setSelectedJobId(newJob.id);
+      setCurrentJobId(newJob.id);
+      setShowNewJobModal(false);
+      setNewJobForm({
+        customerId: '',
+        vehicleNo: '',
+        ownerName: '',
+        branch: 'Head Office',
+        inspectionDate: new Date().toISOString().split('T')[0]
       });
-      setItems([]);
+      toast.success('Job created! Add inspection items below.');
     }
   };
 
-  const handleNewRecord = () => {
-    setCurrentRecordId(null);
-    setDetails({
-      vehicleNo: "",
-      ownerName: "",
-      inspectionDate: new Date().toISOString().split('T')[0],
-      branch: "",
-      status: "in-progress",
+  const handleAddItem = () => {
+    if (!newItem.item) {
+      toast.error('Please enter item name');
+      return;
+    }
+
+    if (editingIndex !== null) {
+      const updated = [...inspectionItems];
+      updated[editingIndex] = newItem;
+      setInspectionItems(updated);
+      setEditingIndex(null);
+      toast.success('Item updated');
+    } else {
+      setInspectionItems([...inspectionItems, newItem]);
+      toast.success('Item added');
+    }
+
+    setNewItem({
+      category: '',
+      item: '',
+      description: '',
+      remarks: ''
     });
-    setItems([]);
-    toast.info('Ready for new inspection');
   };
+
+  const handleEditItem = (index) => {
+    setNewItem(inspectionItems[index]);
+    setEditingIndex(index);
+  };
+
+  const handleDeleteItem = (index) => {
+    setInspectionItems(inspectionItems.filter((_, i) => i !== index));
+    toast.success('Item removed');
+  };
+
+  const handleSaveInspection = async () => {
+    if (!selectedJobId) {
+      toast.error('No job selected');
+      return;
+    }
+
+    if (inspectionItems.length === 0) {
+      toast.error('Please add at least one inspection item');
+      return;
+    }
+
+    const inspectionData = {
+      items: inspectionItems,
+      completedAt: new Date().toISOString()
+    };
+
+    const result = await updateInspectionData(selectedJobId, inspectionData);
+    if (result) {
+      toast.success('Inspection saved successfully!');
+    }
+  };
+
+  const handleProceedToEstimate = () => {
+    if (!selectedJobId) {
+      toast.error('No job selected');
+      return;
+    }
+
+    if (inspectionItems.length === 0) {
+      toast.error('Please add and save inspection items first');
+      return;
+    }
+
+    setCurrentJobId(selectedJobId);
+    navigate('/jobs?step=estimate');
+  };
+
+  const selectedJob = jobs.find(j => j.id === selectedJobId);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-xl font-bold">Vehicle Inspection</h3>
-        <Button onClick={handleNewRecord} variant="secondary" size="sm">
-          <PlusCircle className="h-4 w-4 mr-2" />
-          New Inspection
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-text">Inspection Step</h2>
+          <p className="text-gray-600 dark:text-dark-text-secondary">Create job and inspect vehicle</p>
+        </div>
+        <Button onClick={() => setShowNewJobModal(true)} icon={PlusCircle}>
+          New Job
         </Button>
       </div>
 
       <Card>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          <div>
-            <label className="font-medium">Vehicle No:</label>
-            <input
-              type="text"
-              name="vehicleNo"
-              value={details.vehicleNo}
-              onChange={handleDetailChange}
-              className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="font-medium">Owner Name:</label>
-            <input
-              type="text"
-              name="ownerName"
-              value={details.ownerName}
-              onChange={handleDetailChange}
-              className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="font-medium">Inspection Date:</label>
-            <input
-              type="date"
-              name="inspectionDate"
-              value={details.inspectionDate}
-              onChange={handleDetailChange}
-              className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="font-medium">Branch:</label>
-            <input
-              type="text"
-              name="branch"
-              value={details.branch}
-              onChange={handleDetailChange}
-              className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="font-medium">Status:</label>
-            <select
-              name="status"
-              value={details.status}
-              onChange={handleDetailChange}
-              className="w-full mt-1 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-dark-text">Select Job</h3>
+        <div className="grid grid-cols-1 gap-3">
+          {jobs.filter(j => ['inspection', 'estimate'].includes(j.status)).map(job => (
+            <div
+              key={job.id}
+              onClick={() => setSelectedJobId(job.id)}
+              className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                selectedJobId === job.id
+                  ? 'border-brand-red bg-red-50 dark:bg-red-900/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-brand-red'
+              }`}
             >
-              <option value="in-progress">Work in Progress</option>
-              <option value="complete">Complete</option>
-              <option value="hold">Hold for Material</option>
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-dark-text">{job.job_no}</p>
+                  <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                    {job.owner_name} - {job.vehicle_no}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-dark-text-secondary mt-1">
+                    {new Date(job.job_date).toLocaleDateString()}
+                  </p>
+                </div>
+                <span className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded">
+                  {job.status}
+                </span>
+              </div>
+            </div>
+          ))}
+
+          {jobs.filter(j => ['inspection', 'estimate'].includes(j.status)).length === 0 && (
+            <div className="text-center py-8 text-gray-500 dark:text-dark-text-secondary">
+              No jobs in inspection. Click "New Job" to start.
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {selectedJob && (
+        <>
+          <Card>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text">Inspection Items</h3>
+              <div className="flex gap-2">
+                <Button onClick={handleSaveInspection} icon={Save} variant="secondary">
+                  Save
+                </Button>
+                <Button onClick={handleProceedToEstimate} icon={ArrowRight}>
+                  Proceed to Estimate
+                </Button>
+              </div>
+            </div>
+
+            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-600 dark:text-dark-text-secondary">Job No:</span>
+                  <p className="font-semibold text-gray-900 dark:text-dark-text">{selectedJob.job_no}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600 dark:text-dark-text-secondary">Owner:</span>
+                  <p className="font-semibold text-gray-900 dark:text-dark-text">{selectedJob.owner_name}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600 dark:text-dark-text-secondary">Vehicle:</span>
+                  <p className="font-semibold text-gray-900 dark:text-dark-text">{selectedJob.vehicle_no}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600 dark:text-dark-text-secondary">Date:</span>
+                  <p className="font-semibold text-gray-900 dark:text-dark-text">
+                    {new Date(selectedJob.job_date).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-dark-text">Category</label>
+                <input
+                  type="text"
+                  value={newItem.category}
+                  onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
+                  placeholder="e.g., Body Work, Paint, Engine"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-dark-text">Item *</label>
+                <input
+                  type="text"
+                  value={newItem.item}
+                  onChange={(e) => setNewItem({ ...newItem, item: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
+                  placeholder="Item name"
+                  required
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-dark-text">Description</label>
+                <input
+                  type="text"
+                  value={newItem.description}
+                  onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
+                  placeholder="Item description"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-dark-text">Remarks</label>
+                <textarea
+                  value={newItem.remarks}
+                  onChange={(e) => setNewItem({ ...newItem, remarks: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
+                  placeholder="Additional remarks"
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mb-6">
+              <Button onClick={handleAddItem} icon={editingIndex !== null ? Save : PlusCircle}>
+                {editingIndex !== null ? 'Update Item' : 'Add Item'}
+              </Button>
+              {editingIndex !== null && (
+                <Button
+                  onClick={() => {
+                    setEditingIndex(null);
+                    setNewItem({ category: '', item: '', description: '', remarks: '' });
+                  }}
+                  variant="outline"
+                  icon={X}
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
+
+            {inspectionItems.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b dark:border-gray-700">
+                      <th className="text-left p-2 text-gray-900 dark:text-dark-text">Category</th>
+                      <th className="text-left p-2 text-gray-900 dark:text-dark-text">Item</th>
+                      <th className="text-left p-2 text-gray-900 dark:text-dark-text">Description</th>
+                      <th className="text-left p-2 text-gray-900 dark:text-dark-text">Remarks</th>
+                      <th className="text-right p-2 text-gray-900 dark:text-dark-text">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inspectionItems.map((item, index) => (
+                      <tr key={index} className="border-b dark:border-gray-700">
+                        <td className="p-2 text-gray-900 dark:text-dark-text">{item.category}</td>
+                        <td className="p-2 text-gray-900 dark:text-dark-text">{item.item}</td>
+                        <td className="p-2 text-gray-600 dark:text-dark-text-secondary">{item.description}</td>
+                        <td className="p-2 text-gray-600 dark:text-dark-text-secondary">{item.remarks}</td>
+                        <td className="p-2">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleEditItem(index)}
+                              className="text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteItem(index)}
+                              className="text-red-600 hover:text-red-800 dark:text-red-400"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        </>
+      )}
+
+      <Modal
+        isOpen={showNewJobModal}
+        onClose={() => setShowNewJobModal(false)}
+        title="Create New Job"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-dark-text">Customer *</label>
+            <select
+              value={newJobForm.customerId}
+              onChange={(e) => setNewJobForm({ ...newJobForm, customerId: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
+              required
+            >
+              <option value="">Select Customer</option>
+              {customers.map(customer => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.name} {customer.company ? `- ${customer.company}` : ''}
+                </option>
+              ))}
             </select>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-dark-text">Vehicle No *</label>
+            <input
+              type="text"
+              value={newJobForm.vehicleNo}
+              onChange={(e) => setNewJobForm({ ...newJobForm, vehicleNo: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
+              placeholder="e.g., MH-12-AB-1234"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-dark-text">Branch</label>
+            <input
+              type="text"
+              value={newJobForm.branch}
+              onChange={(e) => setNewJobForm({ ...newJobForm, branch: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-dark-text">Inspection Date</label>
+            <input
+              type="date"
+              value={newJobForm.inspectionDate}
+              onChange={(e) => setNewJobForm({ ...newJobForm, inspectionDate: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg dark:bg-dark-card dark:border-gray-600 dark:text-dark-text"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button onClick={() => setShowNewJobModal(false)} variant="outline">
+              Cancel
+            </Button>
+            <Button onClick={handleCreateJob}>
+              Create Job
+            </Button>
+          </div>
         </div>
-        <div className="flex justify-end mt-4">
-          <Button onClick={saveDetails}>
-            <Save className="h-4 w-4 mr-2" />
-            {currentRecordId ? 'Update Details' : 'Save Details'}
-          </Button>
-        </div>
-      </Card>
-
-      <Card title="Inspection Items">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800 text-left">
-              <tr>
-                <th className="p-2">Item</th>
-                <th className="p-2">Category</th>
-                <th className="p-2">Condition</th>
-                <th className="p-2">Cost</th>
-                <th className="p-2">Multiplier</th>
-                <th className="p-2">Total</th>
-                <th className="p-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((it, index) =>
-                editingIndex === index ? (
-                  <tr key={index} className="bg-blue-50 dark:bg-blue-900">
-                    <td className="p-2">
-                      <input
-                        type="text"
-                        value={it.item}
-                        onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], item: e.target.value }; setItems(copy); }}
-                        list="items-list"
-                        placeholder="Type or select item"
-                        className="w-full p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      />
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="text"
-                        value={it.category}
-                        onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], category: e.target.value }; setItems(copy); }}
-                        list="items-list"
-                        placeholder="Type or select category"
-                        className="w-full p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      />
-                    </td>
-                    <td className="p-2">
-                      <select
-                        value={it.condition}
-                        onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], condition: e.target.value }; setItems(copy); }}
-                        className="w-full p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      >
-                        <option>OK</option>
-                        <option>Repair Needed</option>
-                        <option>Replace</option>
-                        <option>Damage</option>
-                      </select>
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        value={it.cost}
-                        onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], cost: e.target.value }; setItems(copy); }}
-                        className="w-24 p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      />
-                    </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        value={it.multiplier ?? multipliers[it.category] ?? 1}
-                        onChange={(e) => { const copy = [...items]; copy[index] = { ...copy[index], multiplier: parseFloat(e.target.value) || 1 }; setItems(copy); }}
-                        className="w-24 p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        placeholder="Multiplier"
-                      />
-                    </td>
-                    <td className="p-2">{calculateTotal(it)}</td>
-                    <td className="p-2 text-right space-x-1">
-                      <Button variant="ghost" onClick={() => saveEditRow(index)}><Save className="h-4 w-4 text-green-600" /></Button>
-                      <Button variant="ghost" onClick={() => setEditingIndex(null)}><X className="h-4 w-4 text-gray-600" /></Button>
-                    </td>
-                  </tr>
-                ) : (
-                  <tr key={index}>
-                    <td className="p-2">{it.item}</td>
-                    <td className="p-2">{it.category}</td>
-                    <td className="p-2">{it.condition}</td>
-                    <td className="p-2">{it.cost}</td>
-                    <td className="p-2">{it.multiplier ?? multipliers[it.category] ?? 1}</td>
-                    <td className="p-2">{calculateTotal(it)}</td>
-                    <td className="p-2 text-right space-x-1">
-                      <Button variant="ghost" onClick={() => editRow(index)}><Edit className="h-4 w-4 text-blue-600" /></Button>
-                      <Button variant="ghost" onClick={() => deleteRow(index)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                    </td>
-                  </tr>
-                )
-              )}
-
-              {newItem && (
-                <tr className="bg-blue-50 dark:bg-blue-900">
-                  <td className="p-2">
-                    <input
-                      type="text"
-                      value={newItem.item}
-                      onChange={(e) => setNewItem({ ...newItem, item: e.target.value })}
-                      list="items-list"
-                      placeholder="Type or select item"
-                      className="w-full p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="text"
-                      value={newItem.category}
-                      onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                      list="items-list"
-                      placeholder="Type or select category"
-                      className="w-full p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <select
-                      value={newItem.condition}
-                      onChange={(e) => setNewItem({ ...newItem, condition: e.target.value })}
-                      className="w-full p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    >
-                      <option>OK</option>
-                      <option>Repair Needed</option>
-                      <option>Replace</option>
-                      <option>Damage</option>
-                    </select>
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      value={newItem.cost}
-                      onChange={(e) => setNewItem({ ...newItem, cost: e.target.value })}
-                      className="w-24 p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      value={newItem.multiplier ?? multipliers[newItem.category] ?? 1}
-                      onChange={(e) => setNewItem({ ...newItem, multiplier: parseFloat(e.target.value) || 1 })}
-                      className="w-24 p-1 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="Multiplier"
-                    />
-                  </td>
-                  <td className="p-2">{calculateTotal(newItem)}</td>
-                  <td className="p-2 text-right space-x-1">
-                    <Button variant="ghost" onClick={saveNewRow}><Save className="h-4 w-4 text-green-600" /></Button>
-                    <Button variant="ghost" onClick={() => setNewItem(null)}><X className="h-4 w-4 text-gray-600" /></Button>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          {items.length === 0 && !newItem && <div className="text-center p-4 text-gray-500">No inspection items.</div>}
-        </div>
-
-        <div className="mt-4">
-          <Button variant="secondary" onClick={addRow} disabled={!!newItem}>
-            <PlusCircle className="h-4 w-4 mr-2" /> Add Item
-          </Button>
-        </div>
-      </Card>
-
-      <JobSearchBar onSearch={handleSearch} onReset={handleReset} />
-
-      <JobReportList
-        records={filteredRecords}
-        onEdit={handleEditRecord}
-        onDelete={(id) => setDeleteConfirmId(id)}
-        stepName="Inspection"
-      />
-
-      <ConfirmModal
-        isOpen={!!deleteConfirmId}
-        onClose={() => setDeleteConfirmId(null)}
-        onConfirm={() => handleDeleteRecord(deleteConfirmId)}
-        title="Delete Inspection"
-        message="Are you sure you want to delete this inspection record? This action cannot be undone."
-      />
-
-      <datalist id="items-list">
-        {categories.map((cat, i) => <option key={i} value={cat.name} />)}
-      </datalist>
+      </Modal>
     </div>
   );
 };
